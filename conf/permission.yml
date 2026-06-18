@@ -1,0 +1,33 @@
+permissions:
+  - name: add_user
+    description: 创建用户
+    roles:
+      - ADMIN
+
+  - name: delete_user
+    description: 删除用户
+    roles:
+      - ADMIN
+
+  - name: edit_users
+    description: 编辑用户信息
+    roles:
+      - ADMIN
+
+  - name: view_users
+    description: 查阅用户信息
+    roles:
+      - ADMIN
+
+  - name: perform_experiment1
+    description: 进行实验1
+    roles:
+      - ADMIN
+      - USER
+
+  - name: just_walk_by
+    description: 只是路过
+    roles:
+      - ADMIN
+      - USER
+      - GUEST
