@@ -1,6 +1,9 @@
 private
 log
+
 *.db
+.nicegui
 .vscode
-__pycache__
+
 *.pyc
+__pycache__

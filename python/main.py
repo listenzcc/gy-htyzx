@@ -18,9 +18,11 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
+from page_components.debug_block import debug_block
+from page_components.profile_header import profile_header
+import contextlib
 from typing import Optional
 from datetime import datetime
-import contextlib
 from page_components.layout import with_layout
 from nicegui import app, ui
 from fastapi import Request
@@ -35,6 +37,12 @@ from auth.user_service import UserService
 from auth.auth_manager import PermissionManager
 
 from session.user_session_manager import UserSessionManager
+
+from loguru import logger
+
+# %%
+logger.add('log/main.log', rotation='5MB')
+
 
 # %%
 # Constant
@@ -158,20 +166,92 @@ async def welcome_page():
                 'text-positive')
     return
 
+# ==================== REUSABLE COMPONENTS ====================
+
+
+@ui.page('/profile')
+@with_layout
+async def profile_page():
+    authenticated = app.storage.user.get('authenticated', False)
+    username = app.storage.user.get('username', '--')
+    profile_header('Profile', username, authenticated=authenticated)
+
+    # Not login
+    if not authenticated:
+        with make_it_center():
+            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+        logger.error('Requring /profile page but not authenticated.')
+        return
+
+    # Already login
+    # Create a nicely styled table
+    with ui.card().classes('w-full mx-auto p-6'):
+        ui.label('User Information').classes('text-xl font-semibold mb-4')
+
+        # Define field labels and formatting
+        fields = [
+            ('Name', 'name'),
+            ('User ID', 'id'),
+            ('UUID', 'uuid'),
+            ('Role', 'role'),
+            ('Status', 'is_active'),
+            ('Email', 'email'),  # If exists
+            ('Gender', 'gender'),
+            ('Birth Date', 'birth_date'),
+            ('Education', 'education'),
+            ('Training Date', 'training_date'),
+            ('Created At', 'created_at'),
+            ('Last Login', 'last_login'),
+            ('Session ID', 'session_id'),
+        ]
+
+        # Create table
+        with ui.table(rows=[], columns=[
+            {'name': 'field', 'label': 'Field', 'field': 'field', 'sortable': True},
+            {'name': 'value', 'label': 'Value', 'field': 'value', 'sortable': True},
+        ]).classes('w-full').props('dense bordered flat') as table:
+
+            # Build rows
+            rows = []
+            for label, key in fields:
+                value = app.storage.user.get(key)
+
+                # Format datetime objects
+                if isinstance(value, datetime):
+                    value = value.strftime('%Y-%m-%d %H:%M:%S')
+                elif isinstance(value, bool):
+                    value = '✓ Active' if value else '✗ Inactive'
+                elif value == '':
+                    value = 'Not provided'
+
+                rows.append({'field': label, 'value': value})
+
+            # Add authenticated status
+            rows.append({
+                'field': 'Authenticated',
+                'value': '✓ Yes' if authenticated else '✗ No'
+            })
+
+            # Add login time
+            login_time = app.storage.user.get('logInTime')
+            if login_time:
+                if isinstance(login_time, datetime):
+                    login_time = login_time.strftime('%Y-%m-%d %H:%M:%S')
+                rows.append({'field': 'Login Time', 'value': login_time})
+
+            table.rows = rows
+
+    debug_block(f'{app.storage.user=}')
+
+    return
+
 
 @ui.page('/')
 @with_layout
 async def root():
-
-    with make_it_center():
-        # ui.link('Welcome page', '/welcome')
-        # ui.link('Profile page', '/profile')
-        # with ui.card().classes('max-w-3xl w-full shadow-lg'):
-        #     ui.markdown(abstract)
-        pass
-
     # 快速导航按钮
     with ui.row().classes('gap-4 mt-8'):
+        # Check if use is authenticated
         if app.storage.user.get('authenticated', False):
             ui.button('Profile', icon='dashboard',
                       on_click=lambda: ui.navigate.to('/profile')).props('color=primary')
@@ -202,12 +282,13 @@ async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments
         user = user_service.authenticate_user(username.value, password.value)
         if user is not None:
-            app.storage.user.update(
-                {'username': username.value,
-                 'authenticated': True,
-                 'id': user.id,
-                 'logInTime': datetime.now()
-                 })
+            app.storage.user.update(user.to_dict())
+            app.storage.user.update({
+                # 'username': username.value,
+                'authenticated': True,
+                # 'id': user.id,
+                'logInTime': datetime.now(),
+            })
             session_id = session_manager.add_session(app.storage.user)
             app.storage.user.update(
                 {'session_id': session_id}

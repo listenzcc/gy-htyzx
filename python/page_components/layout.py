@@ -88,11 +88,13 @@ def create_header():
 
                 # 主导航
                 with ui.row().classes('gap-6'):
-                    ui.link('介绍页', '/',
+                    ui.link('介绍页', '/intro',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('用户页', '/profile',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
-                    ui.link('实验页', '/profile',
+                    ui.link('实验页', '/experiments',
+                            ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+                    ui.link('其他页', '/others',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
 
             # 右侧：用户信息和操作（右上角）

@@ -1,7 +1,9 @@
 # user_service.py
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from uuid import uuid4
 from typing import Optional, List, Union
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
 from .models import User, RoleEnum
 from .auth_manager import PermissionManager
 from . import logger
@@ -26,7 +28,8 @@ class UserService:
                 return None
 
             # 创建用户
-            user = User(username=username, role=role, **kwargs)
+            user = User(username=username, role=role,
+                        uuid=str(uuid4()), **kwargs)
             user.set_password(password)
 
             self.session.add(user)

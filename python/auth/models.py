@@ -52,8 +52,10 @@ class User(Base):
     education = Column(String(50), unique=False, nullable=True)
     gender = Column(String(10), unique=False, nullable=True)
     training_date = Column(DateTime, unique=False, nullable=True)
+    birth_date = Column(DateTime, unique=False, nullable=True)
 
     password_hash = Column(String(255), nullable=False)
+    uuid = Column(String(255), nullable=False)
 
     # 关系
     permissions = relationship(
@@ -84,7 +86,7 @@ class User(Base):
         return {
             # ------------------------------------------------------------------
             # 个人信息
-            'name': self.name,                    # 姓名
+            'username': self.username,                    # 姓名
             'birth_date': self.birth_date,        # 出生日期
             'education': self.education,          # 学历
             'gender': self.gender,                # 性别
@@ -92,6 +94,7 @@ class User(Base):
             # ------------------------------------------------------------------
             # 系统内置
             'id': self.id,
+            'uuid': self.uuid,
             'role': self.role,                    # 角色
             'is_active': self.is_active,          # 是否激活
             'created_at': self.created_at.isoformat() if self.created_at else None,
