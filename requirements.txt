@@ -1,0 +1,9 @@
+# python==3.11.15
+fastapi==0.123.5
+loguru==0.7.2
+nicegui==3.3.1
+omegaconf==2.3.0
+pandas==2.2.3
+sqlalchemy==2.0.44
+starlette==0.50.0
+werkzeug==3.0.4
