@@ -18,8 +18,10 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
+from page_components.user_management_page import user_manager_header, user_management_users
 from page_components.debug_block import debug_block
-from page_components.profile_header import profile_header
+from page_components.profile_page import profile_header, profile_content_readonly
+
 import contextlib
 from typing import Optional
 from datetime import datetime
@@ -81,15 +83,15 @@ try:
 
     # 创建普通用户
     user1 = user_service.create_user(
-        username="testuser",
-        password="password123",
+        username="user1",
+        password="user1",
         role=RoleEnum.USER.value
     )
 
     # 创建访客
-    guest = user_service.create_user(
-        username="guest",
-        password="guest123",
+    guest1 = user_service.create_user(
+        username="guest1",
+        password="guest1",
         role=RoleEnum.GUEST.value
     )
 except:
@@ -152,6 +154,7 @@ def make_it_center():
     return
 
 
+# ------------------------------------------------------------------------------
 @ui.page('/welcome')
 @with_layout
 async def welcome_page():
@@ -166,15 +169,12 @@ async def welcome_page():
                 'text-positive')
     return
 
-# ==================== REUSABLE COMPONENTS ====================
 
-
+# ------------------------------------------------------------------------------
 @ui.page('/profile')
 @with_layout
 async def profile_page():
     authenticated = app.storage.user.get('authenticated', False)
-    username = app.storage.user.get('username', '--')
-    profile_header('Profile', username, authenticated=authenticated)
 
     # Not login
     if not authenticated:
@@ -183,67 +183,51 @@ async def profile_page():
         logger.error('Requring /profile page but not authenticated.')
         return
 
+    username = app.storage.user.get('username', '--')
+    profile_header('Profile', username, authenticated=authenticated)
+
     # Already login
-    # Create a nicely styled table
-    with ui.card().classes('w-full mx-auto p-6'):
-        ui.label('User Information').classes('text-xl font-semibold mb-4')
-
-        # Define field labels and formatting
-        fields = [
-            ('Name', 'name'),
-            ('User ID', 'id'),
-            ('UUID', 'uuid'),
-            ('Role', 'role'),
-            ('Status', 'is_active'),
-            ('Email', 'email'),  # If exists
-            ('Gender', 'gender'),
-            ('Birth Date', 'birth_date'),
-            ('Education', 'education'),
-            ('Training Date', 'training_date'),
-            ('Created At', 'created_at'),
-            ('Last Login', 'last_login'),
-            ('Session ID', 'session_id'),
-        ]
-
-        # Create table
-        with ui.table(rows=[], columns=[
-            {'name': 'field', 'label': 'Field', 'field': 'field', 'sortable': True},
-            {'name': 'value', 'label': 'Value', 'field': 'value', 'sortable': True},
-        ]).classes('w-full').props('dense bordered flat') as table:
-
-            # Build rows
-            rows = []
-            for label, key in fields:
-                value = app.storage.user.get(key)
-
-                # Format datetime objects
-                if isinstance(value, datetime):
-                    value = value.strftime('%Y-%m-%d %H:%M:%S')
-                elif isinstance(value, bool):
-                    value = '✓ Active' if value else '✗ Inactive'
-                elif value == '':
-                    value = 'Not provided'
-
-                rows.append({'field': label, 'value': value})
-
-            # Add authenticated status
-            rows.append({
-                'field': 'Authenticated',
-                'value': '✓ Yes' if authenticated else '✗ No'
-            })
-
-            # Add login time
-            login_time = app.storage.user.get('logInTime')
-            if login_time:
-                if isinstance(login_time, datetime):
-                    login_time = login_time.strftime('%Y-%m-%d %H:%M:%S')
-                rows.append({'field': 'Login Time', 'value': login_time})
-
-            table.rows = rows
+    profile_content_readonly(app.storage.user)
 
     debug_block(f'{app.storage.user=}')
 
     return
+
+# ------------------------------------------------------------------------------
+
+
+@ui.page('/user_management')
+@with_layout
+async def user_management_page():
+    authenticated = app.storage.user.get('authenticated', False)
+
+    # Not login
+    if not authenticated:
+        with make_it_center():
+            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+        logger.error('Requring /user_management page but not authenticated.')
+        return
+
+    id = app.storage.user.get('id')
+
+    user = user_service.get_user_by_id(id)
+
+    # Check permission
+    if not user.has_permission('view_users'):
+        with make_it_center():
+            ui.label('您没有查看用户的权限。').classes('text-red-500')
+        logger.error('Requring /user_management page but has no premission.')
+        return
+
+    users = [e.to_dict() for e in user_service.list_users()]
+    user_manager_header(n_users=len(users))
+
+    user_management_users(users, id, user_service, lambda e: print(e))
+
+    debug_block(f'{app.storage.user=}')
+    return
+
+# ------------------------------------------------------------------------------
 
 
 @ui.page('/')
@@ -259,6 +243,8 @@ async def root():
                       on_click=lambda: ui.navigate.to('/experiments')).props('color=secondary')
             ui.button('Others', icon='science',
                       on_click=lambda: ui.navigate.to('/others')).props('color=accent')
+            ui.button('User Management', icon='book',
+                      on_click=lambda: ui.navigate.to('/user_management')).props('color=green')
         else:
             ui.button('立即登录', icon='login',
                       on_click=lambda: ui.navigate.to('/login')).props('color=primary')
@@ -276,23 +262,22 @@ async def root():
     return
 
 
+# ------------------------------------------------------------------------------
 @ui.page('/login')
 @with_layout
 async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments
         user = user_service.authenticate_user(username.value, password.value)
         if user is not None:
+            session_id = session_manager.add_session(app.storage.user)
+            permissions = permission_manager.ROLE_PERMISSIONS[user.role]
             app.storage.user.update(user.to_dict())
             app.storage.user.update({
-                # 'username': username.value,
                 'authenticated': True,
-                # 'id': user.id,
                 'logInTime': datetime.now(),
+                'session_id': session_id,
+                'permissions': permissions
             })
-            session_id = session_manager.add_session(app.storage.user)
-            app.storage.user.update(
-                {'session_id': session_id}
-            )
             # go back to where the user wanted to go
             ui.navigate.to(redirect_to)
         else:

@@ -18,6 +18,7 @@ permissions:
     description: 查阅用户信息
     roles:
       - ADMIN
+      - USER
 
   - name: perform_experiment1
     description: 进行实验1
