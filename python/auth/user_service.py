@@ -56,7 +56,7 @@ class UserService:
             return user
         return None
 
-    def update_user_role(self, user_id: int, new_role: str, updater: User) -> bool:
+    def update_user_role(self, user_id: int, new_role: str) -> bool:
         """更新用户角色"""
         try:
             user = self.session.query(User).get(user_id)
@@ -71,7 +71,7 @@ class UserService:
 
             self.session.commit()
             logger.info(
-                f"用户角色更新: {user.username} {old_role} -> {new_role}, 操作者: {updater.username}")
+                f"用户角色更新: {user.username} {old_role} -> {new_role}")
             return True
 
         except Exception as e:
@@ -87,7 +87,7 @@ class UserService:
         """根据用户名获取用户"""
         return self.session.query(User).filter_by(username=username).first()
 
-    def list_users(self, role: str = None, active_only: bool = True) -> List[User]:
+    def list_users(self, role: str = None, active_only: bool = False) -> List[User]:
         """列出用户"""
         query = self.session.query(User)
 
@@ -99,22 +99,13 @@ class UserService:
 
         return query.order_by(User.created_at.desc()).all()
 
-    def deactivate_user(self, user_id: int, updater: User = None) -> bool:
+    def deactivate_user(self, user_id: int) -> bool:
         """停用用户"""
         try:
             user = self.session.query(User).get(user_id)
-            if not user:
-                return False
-
-            # 检查权限
-            # if updater is None or not updater.has_permission('edit_users'):
-            if updater and not updater.is_admin():
-                logger.warning(f"非管理员尝试停用用户: {updater.username}")
-                return False
-
             user.is_active = False
             self.session.commit()
-            logger.info(f"用户已停用: {user.username}, 操作者: {updater.username}")
+            logger.info(f"用户已停用: {user.username}")
             return True
 
         except Exception as e:
@@ -122,21 +113,13 @@ class UserService:
             logger.error(f"停用用户失败: {e}")
             return False
 
-    def activate_user(self, user_id: int, updater: User = None) -> bool:
+    def activate_user(self, user_id: int) -> bool:
         """激活用户"""
         try:
             user = self.session.query(User).get(user_id)
-            if not user:
-                return False
-
-            # 检查权限
-            if updater and not updater.is_admin():
-                logger.warning(f"非管理员尝试激活用户: {updater.username}")
-                return False
-
             user.is_active = True
             self.session.commit()
-            logger.info(f"用户已激活: {user.username}, 操作者: {updater.username}")
+            logger.info(f"用户已激活: {user.username}")
             return True
 
         except Exception as e:
@@ -144,14 +127,13 @@ class UserService:
             logger.error(f"激活用户失败: {e}")
             return False
 
-    def reset_user_passwd(self, identifier: Union[str, int], password, updater: User):
+    def reset_user_passwd(self, identifier: Union[str, int], password):
         """重置用户密码
         Args:
             identifier: 用户ID(int)或用户名/邮箱(str)
             passwd: 新密码
-            update: 操作用户
         Returns:
-            bool: 删除成功返回True，失败返回False
+            bool: 修改成功返回True，失败返回False
         """
         try:
 
@@ -166,43 +148,26 @@ class UserService:
                     or_(User.username == identifier, User.email == identifier)
                 ).first()
 
-            if not user:
-                logger.error(f"用户不存在: {identifier}")
-                return False
-
-            # 检查权限
-            if not updater.is_admin() and not updater.id == user.id:
-                logger.warning(
-                    f"非管理员或非本人尝试修改用户密码: {updater.username} -> {user.username}")
-                return False
-
             user.set_password(password)
             self.session.commit()
 
-            logger.info(
-                f"用户密码修改成功: {user.username} (ID: {user.id}), 操作者: {updater.username}")
+            logger.info(f"用户密码修改成功: {user.username} (ID: {user.id})")
             return True
 
         except Exception as e:
             self.session.rollback()
-            logger.error(f"删除用户失败: {e}")
+            logger.error(f"修改密码失败: {e}")
             return False
         pass
 
-    def remove_user(self, identifier: Union[str, int], updater: User) -> bool:
+    def remove_user(self, identifier: Union[str, int]) -> bool:
         """删除用户
         Args:
             identifier: 用户ID(int)或用户名/邮箱(str)
-            update: 操作用户
         Returns:
             bool: 删除成功返回True，失败返回False
         """
         try:
-            # 检查权限
-            if not updater.is_admin():
-                logger.warning(f"非管理员尝试删除用户: {updater.username}")
-                return False
-
             # 根据标识符类型查询用户
             if isinstance(identifier, int):
                 # 按用户ID查找
@@ -230,8 +195,7 @@ class UserService:
             self.session.delete(user)
             self.session.commit()
 
-            logger.info(
-                f"用户删除成功: {user.username} (ID: {user.id}), 操作者: {updater.username}")
+            logger.info(f"用户删除成功: {user.username} (ID: {user.id})")
             return True
 
         except Exception as e:
