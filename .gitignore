@@ -1,6 +1,7 @@
 private
 log
 
+db
 *.db
 .nicegui
 .vscode

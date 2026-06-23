@@ -52,12 +52,18 @@ class DatabaseManager:
             from .user_service import UserService
             user_service = UserService(session)
 
+            # If everything go wrong, I want this works.
             admin = user_service.get_user_by_username("admin")
+            from datetime import datetime
             if not admin:
                 user_service.create_user(
-                    username="defaultadmin",
-                    password="admin123",
-                    role="ADMIN"
+                    username="admin",
+                    password="admin",
+                    role="ADMIN",
+                    gender="male",
+                    education='middle school',
+                    birth_date=datetime(1999, 11, 22),
+                    training_date=datetime(2020, 11, 22)
                 )
                 logger.info("默认管理员用户已创建")
 

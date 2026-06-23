@@ -56,17 +56,11 @@ class UserService:
             return user
         return None
 
-    def update_user_role(self, user_id: int, new_role: str,
-                         updater: User = None) -> bool:
+    def update_user_role(self, user_id: int, new_role: str, updater: User) -> bool:
         """更新用户角色"""
         try:
             user = self.session.query(User).get(user_id)
             if not user:
-                return False
-
-            # 检查权限（如果不是管理员操作）
-            if updater and not updater.is_admin():
-                logger.warning(f"非管理员尝试修改用户角色: {updater.username}")
                 return False
 
             old_role = user.role
@@ -113,6 +107,7 @@ class UserService:
                 return False
 
             # 检查权限
+            # if updater is None or not updater.has_permission('edit_users'):
             if updater and not updater.is_admin():
                 logger.warning(f"非管理员尝试停用用户: {updater.username}")
                 return False

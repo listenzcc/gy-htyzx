@@ -1,9 +1,26 @@
 # models.py
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table, Date
 from sqlalchemy.orm import relationship, declarative_base
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 import enum
+
+
+def require_active(default_return=False):
+    """
+    装饰器：要求用户处于激活状态
+    :param default_return: 未激活时返回的值
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self.is_active:
+                return default_return
+            return func(self, *args, **kwargs)
+        return wrapper
+    return decorator
+
 
 Base = declarative_base()
 
@@ -31,7 +48,7 @@ class Permission(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)  # 权限名称
     description = Column(String(200))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
     # 关系
     users = relationship('User', secondary=user_permissions,
@@ -42,20 +59,25 @@ class User(Base):
     """用户模型"""
     __tablename__ = 'users'
 
+    # Primary key (Unique and can not change)
     id = Column(Integer, primary_key=True)
-    role = Column(String(20), default=RoleEnum.GUEST.value, nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
 
+    # Unique and can not change
     username = Column(String(50), unique=True, nullable=False)
-    education = Column(String(50), unique=False, nullable=True)
-    gender = Column(String(10), unique=False, nullable=True)
-    training_date = Column(DateTime, unique=False, nullable=True)
-    birth_date = Column(DateTime, unique=False, nullable=True)
 
-    password_hash = Column(String(255), nullable=False)
+    # Automatically maintained
     uuid = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    last_login = Column(DateTime, nullable=True)
+    password_hash = Column(String(255), nullable=False)
+
+    # Variable
+    role = Column(String(20), default=RoleEnum.GUEST.value, nullable=False)
+    gender = Column(String(10), unique=False, nullable=True)
+    education = Column(String(50), unique=False, nullable=True)
+    is_active = Column(Boolean, default=True)
+    birth_date = Column(Date, unique=False, nullable=True)
+    training_date = Column(Date, unique=False, nullable=True)
 
     # 关系
     permissions = relationship(
@@ -65,18 +87,22 @@ class User(Base):
         """设置密码哈希"""
         self.password_hash = generate_password_hash(password)
 
+    @require_active(default_return=False)
     def check_password(self, password):
         """验证密码"""
         return check_password_hash(self.password_hash, password)
 
+    @require_active(default_return=False)
     def has_role(self, role_name):
         """检查用户是否具有指定角色"""
         return self.role == role_name
 
+    @require_active(default_return=False)
     def has_permission(self, permission_name):
         """检查用户是否具有指定权限"""
         return any(perm.name == permission_name for perm in self.permissions)
 
+    @require_active(default_return=False)
     def is_admin(self):
         """检查是否是管理员"""
         return self.role == RoleEnum.ADMIN.value

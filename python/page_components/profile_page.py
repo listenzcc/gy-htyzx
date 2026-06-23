@@ -26,26 +26,25 @@ def profile_header(title: str = "Profile", subtitle: str = None, icon: str = "pe
                 pass
 
 
-def profile_content_readonly(user: dict):
+def profile_content_readonly(dct: dict):
     # Create a nicely styled table
     with ui.card().classes('w-full mx-auto p-6'):
         ui.label('User Information').classes('text-xl font-semibold mb-4')
 
         # Define field labels and formatting
         fields = [
-            ('Name', 'name'),
-            ('User ID', 'id'),
+            ('Name', 'username'),
+            ('ID', 'id'),
             ('UUID', 'uuid'),
             ('Role', 'role'),
-            ('Status', 'is_active'),
-            ('Email', 'email'),  # If exists
+            ('IsActive', 'is_active'),
             ('Gender', 'gender'),
-            ('Birth Date', 'birth_date'),
+            ('BirthDate', 'birth_date'),
             ('Education', 'education'),
-            ('Training Date', 'training_date'),
-            ('Created At', 'created_at'),
-            ('Last Login', 'last_login'),
-            ('Session ID', 'session_id'),
+            ('TrainingDate', 'training_date'),
+            ('CreatedAt', 'created_at'),
+            ('LastLogin', 'last_login'),
+            ('SessionID', 'session_id'),
         ]
 
         # Create table
@@ -57,7 +56,7 @@ def profile_content_readonly(user: dict):
             # Build rows
             rows = []
             for label, key in fields:
-                value = user.get(key)
+                value = dct.get(key)
 
                 # Format datetime objects
                 if isinstance(value, datetime):
@@ -68,18 +67,5 @@ def profile_content_readonly(user: dict):
                     value = 'Not provided'
 
                 rows.append({'field': label, 'value': value})
-
-            # Add authenticated status
-            rows.append({
-                'field': 'Authenticated',
-                'value': '✓ Yes' if user.get('authenticated', False) else '✗ No'
-            })
-
-            # Add login time
-            login_time = user.get('logInTime')
-            if login_time:
-                if isinstance(login_time, datetime):
-                    login_time = login_time.strftime('%Y-%m-%d %H:%M:%S')
-                rows.append({'field': 'Login Time', 'value': login_time})
 
             table.rows = rows

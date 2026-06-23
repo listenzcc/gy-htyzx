@@ -72,31 +72,6 @@ user_service = UserService(session)
 permission_manager = PermissionManager(session)
 auth_context = AuthContext(user_service, permission_manager)
 
-try:
-    # 创建测试用户
-    # 创建管理员
-    admin1 = user_service.create_user(
-        username='admin',
-        password='admin',
-        role=RoleEnum.ADMIN.value
-    )
-
-    # 创建普通用户
-    user1 = user_service.create_user(
-        username="user1",
-        password="user1",
-        role=RoleEnum.USER.value
-    )
-
-    # 创建访客
-    guest1 = user_service.create_user(
-        username="guest1",
-        password="guest1",
-        role=RoleEnum.GUEST.value
-    )
-except:
-    pass
-
 # Auth middle ware
 session_manager = UserSessionManager()
 
@@ -174,43 +149,45 @@ async def welcome_page():
 @ui.page('/profile')
 @with_layout
 async def profile_page():
-    authenticated = app.storage.user.get('authenticated', False)
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
 
     # Not login
-    if not authenticated:
+    if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
             ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
         logger.error('Requring /profile page but not authenticated.')
         return
 
-    username = app.storage.user.get('username', '--')
-    profile_header('Profile', username, authenticated=authenticated)
+    profile_header('Profile', user.username, user.is_active)
 
     # Already login
-    profile_content_readonly(app.storage.user)
+    dct = user.to_dict()
+    dct.update({
+        'last_login': app.storage.user['last_login'],
+        'session_id': app.storage.user['session_id']
+    })
+
+    profile_content_readonly(dct)
 
     debug_block(f'{app.storage.user=}')
 
     return
 
+
 # ------------------------------------------------------------------------------
-
-
 @ui.page('/user_management')
 @with_layout
 async def user_management_page():
-    authenticated = app.storage.user.get('authenticated', False)
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
 
     # Not login
-    if not authenticated:
+    if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
-            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+            ui.label('用户权限不足。').classes('text-red-500')
         logger.error('Requring /user_management page but not authenticated.')
         return
-
-    id = app.storage.user.get('id')
-
-    user = user_service.get_user_by_id(id)
 
     # Check permission
     if not user.has_permission('view_users'):
@@ -220,9 +197,9 @@ async def user_management_page():
         return
 
     users = [e.to_dict() for e in user_service.list_users()]
-    user_manager_header(n_users=len(users))
+    user_manager_header()
 
-    user_management_users(users, id, user_service, lambda e: print(e))
+    user_management_users(id, user_service, on_edit_apply=None)
 
     debug_block(f'{app.storage.user=}')
     return
@@ -270,13 +247,11 @@ async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
         user = user_service.authenticate_user(username.value, password.value)
         if user is not None:
             session_id = session_manager.add_session(app.storage.user)
-            permissions = permission_manager.ROLE_PERMISSIONS[user.role]
             app.storage.user.update(user.to_dict())
             app.storage.user.update({
                 'authenticated': True,
-                'logInTime': datetime.now(),
+                'last_login': datetime.now().isoformat(),
                 'session_id': session_id,
-                'permissions': permissions
             })
             # go back to where the user wanted to go
             ui.navigate.to(redirect_to)
@@ -323,6 +298,7 @@ if __name__ in {'__main__', '__mp_main__'}:
     ui.run(root,
            title=PROJECT.get('name', 'Project'),
            favicon='./static/favicon/favicon.ico',
-           uvicorn_reload_excludes='.*, .py[cod], .sw.*, ~*, *.db, *.log, fds, hysplit',
+           # ! Only reload with these folders are changed.
+           uvicorn_reload_dirs=['./python'],
            storage_secret='abcdefg',
            **kwargs)

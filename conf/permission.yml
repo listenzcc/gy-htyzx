@@ -27,7 +27,7 @@ permissions:
       - USER
 
   - name: just_walk_by
-    description: 只是路过
+    description: 纯路过
     roles:
       - ADMIN
       - USER

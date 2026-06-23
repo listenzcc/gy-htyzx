@@ -1,10 +1,10 @@
 from nicegui import ui
 
 
-def date_input(name, value):
+def date_input(name, value: str):
     inp = ui.input(
         name,
-        value=value if isinstance(value, str) else ''
+        value=value
     ).props('readonly')
 
     def open_dialog():
@@ -12,7 +12,7 @@ def date_input(name, value):
 
     with ui.dialog() as dialog:
         with ui.card():
-            date = ui.date()
+            date = ui.date(value)
 
             def apply_date():
                 inp.value = date.value
