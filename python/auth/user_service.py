@@ -127,6 +127,32 @@ class UserService:
             logger.error(f"激活用户失败: {e}")
             return False
 
+    def edit_user_comprehensive(self, updated: dict):
+        """一次编辑多项用户信息"""
+        try:
+            user = self.session.query(User).get(updated['id'])
+
+            from datetime import datetime
+
+            # Change every input
+            user.role = updated['role']
+            user.gender = updated['gender']
+            user.is_active = updated['is_active']
+            user.education = updated['education']
+            user.birth_date = datetime.strptime(
+                updated['birth_date'], '%Y-%m-%d')
+            user.training_date = datetime.strptime(
+                updated['training_date'], '%Y-%m-%d')
+
+            self.session.commit()
+            logger.info(f"用户信息已修改: {updated}")
+            return True
+
+        except Exception as e:
+            self.session.rollback()
+            logger.error(f'修改用户信息失败: {e}')
+            return False
+
     def reset_user_passwd(self, identifier: Union[str, int], password):
         """重置用户密码
         Args:

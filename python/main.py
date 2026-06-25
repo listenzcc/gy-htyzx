@@ -196,10 +196,12 @@ async def user_management_page():
         logger.error('Requring /user_management page but has no premission.')
         return
 
-    users = [e.to_dict() for e in user_service.list_users()]
     user_manager_header()
 
-    user_management_users(id, user_service, on_edit_apply=None)
+    def _on_edit_apply(updated: dict):
+        user_service.edit_user_comprehensive(updated)
+
+    user_management_users(id, user_service, on_edit_apply=_on_edit_apply)
 
     debug_block(f'{app.storage.user=}')
     return
@@ -299,6 +301,6 @@ if __name__ in {'__main__', '__mp_main__'}:
            title=PROJECT.get('name', 'Project'),
            favicon='./static/favicon/favicon.ico',
            # ! Only reload with these folders are changed.
-           uvicorn_reload_dirs=['./python'],
+           #    uvicorn_reload_dirs=['./python'],
            storage_secret='abcdefg',
            **kwargs)

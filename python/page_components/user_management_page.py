@@ -171,6 +171,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                 ui.label('User Detail').classes('text-lg font-semibold')
 
+                # u is the dict from auth.models.User.to_dict
                 u = selected['user']
                 if not u:
                     ui.label('Select a user').classes('text-gray-500')
@@ -225,9 +226,14 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                 # Apply
                 def apply():
+                    if not user_service.get_user_by_id(id).has_permission('edit_users'):
+                        ui.notify('Permission Deny').classes('text-red-800')
+                        return
+
                     updated = dict(u)
 
                     updated['role'] = inputs['role'].value
+                    updated['gender'] = inputs['gender'].value
                     updated['is_active'] = inputs['is_active'].value
                     updated['birth_date'] = inputs['birth_date'].value or None
                     updated['training_date'] = inputs['training_date'].value or None
@@ -237,7 +243,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     else:
                         print(f'APPLY, {updated=}')
 
-                    ui.notify('Changes prepared')
+                    ui.notify('Changes are applied')
 
                 ui.button('Apply', on_click=apply).props('color=primary')
     return
