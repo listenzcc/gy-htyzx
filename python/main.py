@@ -256,10 +256,9 @@ async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
         return
 
     reuseable_header('Login & Signup')
-    with ui.row().classes('w-full'):
+    with ui.row().classes('w-full justify-evenly'):
         login_login_card(user_service, session_manager, app, redirect_to)
-        login_signup_card()
-        ui.label('Placeholder for signup')
+        login_signup_card(user_service)
 
     return
 

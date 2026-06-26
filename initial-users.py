@@ -21,24 +21,18 @@ Functions:
 import os
 import time
 import random
+
 from pathlib import Path
 from datetime import datetime, timedelta
-from python.auth.user_service import UserService
+
+from python.constants import *
 from python.auth.database import DatabaseManager
+from python.auth.user_service import UserService
 
 
 # %%
-GENDERS = ['male', 'female']
 BIRTH_DATE_RANGE = [datetime(1980, 1, 1), datetime(2001, 1, 1)]
 TRAINING_DATE_RANGE = [datetime(2020, 1, 1), datetime(2026, 1, 1)]
-EDUCATIONS = [
-    'middle school',      # 初中
-    'high school',        # 高中
-    'associate degree',   # 大专
-    'bachelor',           # 本科
-    'master',             # 硕士
-    'doctorate'           # 博士
-]
 NUM_ADMIN = 3
 NUM_USER = 100
 NUM_GUEST = 10
@@ -73,8 +67,8 @@ def generate_user_randomly(username: str = None, password: str = None, role: str
     }
 
     dct.update({
-        'gender': random.choice(GENDERS),
-        'education': random.choice(EDUCATIONS),
+        'gender': random.choice(list(GENDERS)),
+        'education': random.choice(list(EDUCATIONS)),
         'birth_date': random_date(*BIRTH_DATE_RANGE).date(),
         'training_date': random_date(*TRAINING_DATE_RANGE).date()
     })

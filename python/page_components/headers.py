@@ -1,5 +1,9 @@
+import sys
 from datetime import datetime
 from nicegui import ui
+
+sys.path.append('..')  # noqa
+from constants import *
 
 
 def reuseable_header(
@@ -28,9 +32,9 @@ def reuseable_header(
 
         # Title and subtitle
         with ui.column().classes('gap-0'):
-            ui.label(title).classes('text-3xl font-bold tracking-tight')
+            ui.label(title).classes(STYLES.pageTitle)
             if subtitle:
-                ui.label(subtitle).classes('text-gray-500 text-sm')
+                ui.label(subtitle).classes(STYLES.pageSubTitle)
 
         # Spacer and optional badge/status
         ui.space()
@@ -38,7 +42,7 @@ def reuseable_header(
         if badge_kwargs.get('text') is None:
             badge_kwargs['text'] = datetime.isoformat(datetime.now())
 
-        with ui.badge(**badge_kwargs).classes('text-sm'):
+        with ui.badge(**badge_kwargs).classes(STYLES.pageBadgeText):
             pass
 
         # Status badge

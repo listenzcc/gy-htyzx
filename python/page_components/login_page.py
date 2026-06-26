@@ -2,11 +2,21 @@ import sys
 from nicegui import ui, App
 from datetime import datetime
 from .inputs import date_input
-from .constants import *
 
 sys.path.append('..')  # noqa
+from constants import *
 from auth.user_service import UserService
 from session.user_session_manager import UserSessionManager
+
+username_validation = {
+    '用户名过短': lambda value: len(value) > 3,
+    '用户名包含特殊字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
+}
+
+password_validation = {
+    '密码过短': lambda value: len(value) > 3,
+    '密码包含特殊字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
+}
 
 
 def login_login_card(
@@ -33,9 +43,9 @@ def login_login_card(
         ui.notify('Wrong username or password', color='negative')
         return False
 
-    with ui.card().classes('w-1/3 shadow-lg border'):  # .classes('absolute-center'):
-        ui.label('Login').classes('text-2xl font-bold tracking-tight')
-        username = ui.input('Username').classes(
+    with ui.card().classes(STYLES.columnCard):  # .classes('absolute-center'):
+        ui.label('Login').classes(STYLES.cardTitleLabel)
+        username = ui.input('Username', validation=username_validation).classes(
             'w-full').on('keydown.enter', try_login)
         password = ui.input('Password', password=True, password_toggle_button=True).classes('w-full').on(
             'keydown.enter', try_login)
@@ -44,10 +54,10 @@ def login_login_card(
     return
 
 
-def login_signup_card(on_edit_apply=None):
+def login_signup_card(user_server: UserService, on_edit_apply=None):
 
-    with ui.card().classes('w-1/3 shadow-lg border') as detail_card:
-        ui.label('Signup').classes('text-2xl font-bold tracking-tight')
+    with ui.card().classes(STYLES.columnCard) as detail_card:
+        ui.label('Signup').classes(STYLES.cardTitleLabel)
 
         inputs = {}
 
@@ -56,64 +66,91 @@ def login_signup_card(on_edit_apply=None):
             detail_card.clear()
 
             with detail_card:
-                ui.label('User Detail').classes('text-lg font-semibold')
+                ui.label('Signup').classes(STYLES.cardTitleLabel)
 
-                # u is the empty dict
-                u = {}
+                # Init the u as the NEW_USER_DCT
+                u = {k: v for k, v in NEW_USER_DCT.items()}
 
-                # immutable fields (grey / disabled)
-                with ui.row():
-                    ui.input('ID', value=u.get('id')).props(
-                        'disable').classes('bg-gray-100')
-                    inputs['is_active'] = ui.switch(
-                        'Active', value=u.get('is_active'))
-                ui.input('Username', value=u.get('username')).props(
-                    'disable').classes('bg-gray-100')
-                ui.input('UUID', value=u.get('uuid')).props(
-                    'disable').classes('w-full bg-gray-100')
+                # Username
+                inputs['username'] = ui.input(
+                    'Username', value=u.get('username', ''),
+                    validation=username_validation
+                ).classes('w-full')
 
-                # Role & gender
-                with ui.row().classes('w-full'):
+                # Password
+                password_validation.update({
+                    '密码不一致': lambda _: inputs['password'].value == inputs['confirmPassword'].value
+                })
+
+                inputs['password'] = ui.input(
+                    'Password', password=True, password_toggle_button=True).classes('w-full')
+                inputs['confirmPassword'] = ui.input(
+                    'Confirm Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+
+                ui.separator().classes('border-t-2 border-gray-200')
+
+                # Role & active
+                with ui.row().classes('w-full row'):
                     inputs['role'] = ui.select(
-                        options=['ADMIN', 'USER', 'GUEST'],
+                        options=list(ROLES),
                         label='Role',
                         value=u.get('role')
-                    ).classes('w-1/3')
+                    ).classes('col-5')
+
+                    inputs['is_active'] = ui.switch(
+                        'Active', value=u.get('is_active', True))
+
+                # Gender & education
+                with ui.row().classes('w-full row'):
+                    # Gender
                     inputs['gender'] = ui.select(
-                        options=['male', 'female'],
+                        options=list(GENDERS),
                         label='Gender',
                         value=u.get('gender')
-                    ).classes('w-1/3')
+                    ).classes('col-5')
 
-                # With date handling
-                # Birth
-                birth = u.get('birth_date') | datetime.now()
-                inputs['birth_date'] = date_input(
-                    'Birth Date', birth.strftime('%Y-%m-%d'))
+                    # Education
+                    education = u.get('education')
+                    options = list(EDUCATIONS)
+                    if not education in options:
+                        options.append(education)
+                    inputs['education'] = ui.select(
+                        options=options,
+                        value=education,
+                        label='Education',
+                        new_value_mode='add'
+                    ).classes('col-5')
 
-                # Training
-                training = u.get('training_date')
-                inputs['training_date'] = date_input(
-                    'Training Date', training.strftime('%Y-%m-%d'))
+                # Birth date & training date
+                with ui.row().classes('w-full row'):
+                    # Birth
+                    birth = u.get('birth_date', datetime.now())
+                    inputs['birth_date'] = date_input(
+                        'Birth Date', birth.strftime(DATE_FMT)).classes('col-5')
 
-                # Education
-                education = u.get('education')
-                options = [e for e in EDUCATIONS]
-                if not education in options:
-                    options.append(education)
-                inputs['education'] = ui.select(
-                    options=options,
-                    value=education,
-                    label='Education',
-                    new_value_mode='add'
-                )
+                    # Training
+                    training = u.get('training_date', datetime.now())
+                    inputs['training_date'] = date_input(
+                        'Training Date', training.strftime(DATE_FMT)).classes('col-5')
 
                 # Apply
+
+                def _check_inputs():
+                    return all([
+                        len(inputs['username'].value.strip()) > 0,
+                        inputs['password'] == inputs['confirmPassword']
+                    ])
+
                 def apply():
+                    print(_check_inputs())
+
                     updated = dict(u)
 
                     updated['role'] = inputs['role'].value
                     updated['gender'] = inputs['gender'].value
+                    updated['username'] = inputs['username'].value.strip()
+                    updated['password'] = inputs['password'].value
+                    updated['education'] = inputs['education'].value
                     updated['is_active'] = inputs['is_active'].value
                     updated['birth_date'] = inputs['birth_date'].value or None
                     updated['training_date'] = inputs['training_date'].value or None
@@ -122,8 +159,9 @@ def login_signup_card(on_edit_apply=None):
                         on_edit_apply(updated)
                     else:
                         print(f'APPLY, {updated=}')
+                        # user_server.create_user(**updated)
 
-                    ui.notify('Changes are applied')
+                    ui.notify('New user is applied')
 
                 ui.button('Apply', on_click=apply).props('color=primary')
         render_detail()

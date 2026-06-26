@@ -2,9 +2,9 @@ import sys
 from nicegui import ui
 from datetime import datetime
 from .inputs import date_input
-from .constants import *
 
 sys.path.append('..')  # noqa
+from constants import *
 from auth.user_service import UserService
 
 
@@ -77,9 +77,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             except Exception:
                 pass
 
-        role_class = ROLE_COLORS.get(
+        role_class = ROLES.get(
             user.get('role'),
-            'bg-gray-100 text-gray-800'
+            STYLES.plainText
         )
 
         role = (
@@ -88,14 +88,25 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             f'</span>'
         )
 
-        gender_class = GENDER_COLORS.get(
+        gender_class = GENDERS.get(
             user.get('gender'),
-            'text-gray-800'
+            STYLES.plainText
         )
 
         gender = (
             f'<span class="px-2 py-1 rounded {gender_class}">'
             f'{user.get("gender", "—")}'
+            f'</span>'
+        )
+
+        education_class = EDUCATIONS.get(
+            user.get('education'),
+            STYLES.plainText
+        )
+
+        education = (
+            f'<span class="px-2 py-1 rounded {education_class}">'
+            f'{user.get("education", "—")}'
             f'</span>'
         )
 
@@ -107,15 +118,15 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             'created_at': created or '—',
             'training_date': user['training_date'],
             'birth_date': user['birth_date'],
-            'education': user['education'],
+            'education': education,
             'gender': gender
         })
 
     # --- UI layout: table + detail panel ---
 
     # List users table
-    with ui.card().classes('w-full shadow-lg border'):
-        ui.label('User List').classes('text-lg font-semibold')
+    with ui.card().classes(STYLES.fullCard):
+        ui.label('User List').classes(STYLES.cardTitleLabel)
         with ui.table(
             rows=rows,
             columns=columns,
@@ -130,14 +141,14 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
             table.on('row-click', select_row)
 
-            for cell in ['role', 'is_active', 'gender']:
+            for cell in ['role', 'is_active', 'gender', 'education']:
                 table.add_slot(f'body-cell-{cell}', r'''
                     <q-td :props="props"><span v-html="props.value"></span></q-td>
                 ''')
 
     # detail edit table
-    with ui.card().classes('w-1/3 shadow-lg border') as detail_card:
-        ui.label('Select a user').classes('text-lg font-semibold')
+    with ui.card().classes(STYLES.columnCard) as detail_card:
+        ui.label('Select a user').classes(STYLES.cardTitleLabel)
 
         inputs = {}
 
@@ -147,37 +158,37 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
             with detail_card:
                 if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                    ui.label('Permission Deny').classes('text-red-800')
+                    ui.label('Permission Deny').classes(STYLES.errorText)
                     return
 
-                ui.label('User Detail').classes('text-lg font-semibold')
+                ui.label('User Detail').classes(STYLES.cardTitleLabel)
 
                 # u is the dict from auth.models.User.to_dict
                 u = selected['user']
                 if not u:
-                    ui.label('Select a user').classes('text-gray-500')
+                    ui.label('Select a user').classes(STYLES.plainText)
                     return
 
                 # immutable fields (grey / disabled)
                 with ui.row():
                     ui.input('ID', value=u.get('id')).props(
-                        'disable').classes('bg-gray-100')
+                        'disable').classes(STYLES.nonEditable)
                     inputs['is_active'] = ui.switch(
                         'Active', value=u.get('is_active'))
                 ui.input('Username', value=u.get('username')).props(
-                    'disable').classes('bg-gray-100')
+                    'disable').classes(STYLES.nonEditable)
                 ui.input('UUID', value=u.get('uuid')).props(
-                    'disable').classes('w-full bg-gray-100')
+                    'disable').classes(STYLES.nonEditable + ' w-full')
 
                 # Role & gender
                 with ui.row().classes('w-full'):
                     inputs['role'] = ui.select(
-                        options=['ADMIN', 'USER', 'GUEST'],
+                        options=list(ROLES),
                         label='Role',
                         value=u.get('role')
                     ).classes('w-1/3')
                     inputs['gender'] = ui.select(
-                        options=['male', 'female'],
+                        options=list(GENDERS),
                         label='Gender',
                         value=u.get('gender')
                     ).classes('w-1/3')
@@ -186,12 +197,12 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 # Birth
                 birth = u.get('birth_date')
                 inputs['birth_date'] = date_input(
-                    'Birth Date', birth.strftime('%Y-%m-%d'))
+                    'Birth Date', birth.strftime(DATE_FMT))
 
                 # Training
                 training = u.get('training_date')
                 inputs['training_date'] = date_input(
-                    'Training Date', training.strftime('%Y-%m-%d'))
+                    'Training Date', training.strftime(DATE_FMT))
 
                 # Education
                 education = u.get('education')
@@ -215,6 +226,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                     updated['role'] = inputs['role'].value
                     updated['gender'] = inputs['gender'].value
+                    updated['education'] = inputs['education'].value
                     updated['is_active'] = inputs['is_active'].value
                     updated['birth_date'] = inputs['birth_date'].value or None
                     updated['training_date'] = inputs['training_date'].value or None

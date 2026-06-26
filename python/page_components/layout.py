@@ -156,11 +156,9 @@ def create_user_info_section():
             with ui.row().classes('items-center gap-3'):
                 ui.label('Welcome, Guest').classes('text-sm text-gray-600')
 
-                # 登录/注册按钮
+                # 登录按钮
                 ui.button('Login', on_click=lambda: ui.navigate.to('/login'),
                           color='primary', icon='login').props('outline')
-                ui.button('Sign Up', on_click=lambda: ui.navigate.to('/register'),
-                          color='positive').props('outline')
 
 
 def on_logout():

@@ -1,4 +1,5 @@
 # user_service.py
+import sys
 from uuid import uuid4
 from typing import Optional, List, Union
 from sqlalchemy import or_
@@ -7,6 +8,9 @@ from sqlalchemy.orm import Session
 from .models import User, RoleEnum
 from .auth_manager import PermissionManager
 from . import logger
+
+sys.path.append('..')  # noqa
+from constants import *
 
 
 class UserService:
@@ -140,9 +144,9 @@ class UserService:
             user.is_active = updated['is_active']
             user.education = updated['education']
             user.birth_date = datetime.strptime(
-                updated['birth_date'], '%Y-%m-%d')
+                updated['birth_date'], DATE_FMT)
             user.training_date = datetime.strptime(
-                updated['training_date'], '%Y-%m-%d')
+                updated['training_date'], DATE_FMT)
 
             self.session.commit()
             logger.info(f"用户信息已修改: {updated}")
