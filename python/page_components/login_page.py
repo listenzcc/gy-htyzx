@@ -14,7 +14,7 @@ username_validation = {
 }
 
 password_validation = {
-    '密码过短': lambda value: len(value) > 3,
+    '密码过短': lambda value: len(value) > 5,
     '密码包含特殊字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
 }
 
@@ -78,14 +78,18 @@ def login_signup_card(user_server: UserService, on_edit_apply=None):
                 ).classes('w-full')
 
                 # Password
-                password_validation.update({
-                    '密码不一致': lambda _: inputs['password'].value == inputs['confirmPassword'].value
+                def _v():
+                    return inputs['password'].value == inputs['confirmPassword'].value
+                confirm_password_validation = {
+                    k: v for k, v in password_validation.items()}
+                confirm_password_validation.update({
+                    '密码不一致': lambda _: _v()
                 })
 
                 inputs['password'] = ui.input(
-                    'Password', password=True, password_toggle_button=True).classes('w-full')
+                    'Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
                 inputs['confirmPassword'] = ui.input(
-                    'Confirm Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                    'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
 
                 ui.separator().classes('border-t-2 border-gray-200')
 
