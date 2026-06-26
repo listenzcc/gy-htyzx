@@ -18,9 +18,11 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
-from page_components.user_management_page import user_manager_header, user_management_users
+from page_components.headers import reuseable_header
+from page_components.login_page import login_login_card, login_signup_card
+from page_components.user_management_page import user_management_users
 from page_components.debug_block import debug_block
-from page_components.profile_page import profile_header, profile_content_readonly
+from page_components.profile_page import profile_content_readonly
 
 import contextlib
 from typing import Optional
@@ -159,7 +161,7 @@ async def profile_page():
         logger.error('Requring /profile page but not authenticated.')
         return
 
-    profile_header('Profile', user.username, user.is_active)
+    reuseable_header('Profile', user.username)
 
     # Already login
     dct = user.to_dict()
@@ -196,7 +198,7 @@ async def user_management_page():
         logger.error('Requring /user_management page but has no premission.')
         return
 
-    user_manager_header()
+    reuseable_header('User Management')
 
     def _on_edit_apply(updated: dict):
         user_service.edit_user_comprehensive(updated)
@@ -213,7 +215,7 @@ async def user_management_page():
 @with_layout
 async def root():
     # 快速导航按钮
-    with ui.row().classes('gap-4 mt-8'):
+    with ui.row().classes('gap-4 mt-8 w-full'):
         # Check if use is authenticated
         if app.storage.user.get('authenticated', False):
             ui.button('Profile', icon='dashboard',
@@ -232,9 +234,10 @@ async def root():
 
     # 使用markdown并添加卡片样式
     abstract = PROJECT['abstract']
-    with ui.card().classes('max-w-3xl w-full shadow-lg bg-white/40'):
+    with ui.card().classes('w-full shadow-lg bg-white/40'):
         with ui.card_section().classes('p-8'):
-            ui.markdown(abstract).classes(
+            ui.markdown(abstract,
+                        extras=['latex', 'mermaid', 'task_lists', 'code']).classes(
                 'text-gray-700 leading-relaxed'
             )
 
@@ -242,36 +245,22 @@ async def root():
 
 
 # ------------------------------------------------------------------------------
+
 @ui.page('/login')
 @with_layout
 async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
-    def try_login() -> None:  # local function to avoid passing username and password as arguments
-        user = user_service.authenticate_user(username.value, password.value)
-        if user is not None:
-            session_id = session_manager.add_session(app.storage.user)
-            app.storage.user.update(user.to_dict())
-            app.storage.user.update({
-                'authenticated': True,
-                'last_login': datetime.now().isoformat(),
-                'session_id': session_id,
-            })
-            # go back to where the user wanted to go
-            ui.navigate.to(redirect_to)
-        else:
-            ui.notify('Wrong username or password', color='negative')
 
+    # Navigate to /profile if user is already login.
     if app.storage.user.get('authenticated', False):
-        # return RedirectResponse('/')
-        # ui.navigate.to('/')
+        ui.navigate.to('/profile')
         return
 
-    with ui.card().classes('absolute-center'):
-        ui.label('Login')
-        username = ui.input('Username').on('keydown.enter', try_login)
-        password = ui.input('Password', password=True, password_toggle_button=True).on(
-            'keydown.enter', try_login)
-        ui.button('Log in', on_click=try_login)
-        ui.link('Continue without login', '/welcome')
+    reuseable_header('Login & Signup')
+    with ui.row().classes('w-full'):
+        login_login_card(user_service, session_manager, app, redirect_to)
+        login_signup_card()
+        ui.label('Placeholder for signup')
+
     return
 
 # %% ---- 2026-06-18 ------------------------
@@ -301,6 +290,6 @@ if __name__ in {'__main__', '__mp_main__'}:
            title=PROJECT.get('name', 'Project'),
            favicon='./static/favicon/favicon.ico',
            # ! Only reload with these folders are changed.
-           #    uvicorn_reload_dirs=['./python'],
+           uvicorn_reload_dirs='./python',
            storage_secret='abcdefg',
            **kwargs)

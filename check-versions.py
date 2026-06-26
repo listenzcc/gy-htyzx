@@ -6,6 +6,7 @@ import pandas
 import sqlalchemy
 import starlette
 import werkzeug
+import latex2mathml
 
 
 lst = ['# python==3.11.15']
@@ -17,11 +18,12 @@ for e in [
     pandas,
     sqlalchemy,
     starlette,
-    werkzeug
+    werkzeug,
+    latex2mathml
 ]:
     lst.append(f'{e.__name__}=={e.__version__}')
 
-print(lst)
+[print(e) for e in lst]
 
 with open('./requirements.txt', 'w') as f:
     f.writelines([e+'\n' for e in lst])

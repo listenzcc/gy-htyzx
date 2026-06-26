@@ -88,6 +88,8 @@ def create_header():
 
                 # 主导航
                 with ui.row().classes('gap-6'):
+                    ui.link('主页', '/',
+                            ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('介绍页', '/intro',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('用户页', '/profile',
