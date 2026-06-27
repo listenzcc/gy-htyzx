@@ -138,26 +138,25 @@ def login_signup_card(user_server: UserService, on_edit_apply=None):
                         'Training Date', training.strftime(DATE_FMT)).classes('col-5')
 
                 # Apply
-
-                def _check_inputs():
-                    return all([
-                        len(inputs['username'].value.strip()) > 0,
-                        inputs['password'] == inputs['confirmPassword']
-                    ])
-
                 def apply():
-                    print(_check_inputs())
-
                     updated = dict(u)
 
-                    updated['role'] = inputs['role'].value
+                    updated['role'] = inputs['role'].value.strip()
                     updated['gender'] = inputs['gender'].value
                     updated['username'] = inputs['username'].value.strip()
-                    updated['password'] = inputs['password'].value
+                    updated['password'] = inputs['password'].value.strip()
+                    updated['confirmPassword'] = inputs['confirmPassword'].value.strip()
                     updated['education'] = inputs['education'].value
                     updated['is_active'] = inputs['is_active'].value
                     updated['birth_date'] = inputs['birth_date'].value or None
                     updated['training_date'] = inputs['training_date'].value or None
+
+                    def _check_inputs():
+                        return all([
+                            len(updated['username']) > 5,
+                            updated['password'] == updated['confirmPassword']
+                        ])
+                    print(_check_inputs())
 
                     if on_edit_apply:
                         on_edit_apply(updated)
