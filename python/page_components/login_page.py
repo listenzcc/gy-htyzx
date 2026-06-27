@@ -10,12 +10,12 @@ from session.user_session_manager import UserSessionManager
 
 username_validation = {
     '用户名过短': lambda value: len(value) > 3,
-    '用户名包含特殊字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
+    '用户名包含不支持的字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
 }
 
 password_validation = {
     '密码过短': lambda value: len(value) > 5,
-    '密码包含特殊字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
+    '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
 }
 
 
@@ -54,7 +54,7 @@ def login_login_card(
     return
 
 
-def login_signup_card(user_server: UserService, on_edit_apply=None):
+def login_signup_card(user_server: UserService, on_success: None):
 
     with ui.card().classes(STYLES.columnCard) as detail_card:
         ui.label('Signup').classes(STYLES.cardTitleLabel)
@@ -148,23 +148,41 @@ def login_signup_card(user_server: UserService, on_edit_apply=None):
                     updated['confirmPassword'] = inputs['confirmPassword'].value.strip()
                     updated['education'] = inputs['education'].value
                     updated['is_active'] = inputs['is_active'].value
-                    updated['birth_date'] = inputs['birth_date'].value or None
-                    updated['training_date'] = inputs['training_date'].value or None
+                    updated['birth_date'] = datetime.strptime(
+                        inputs['birth_date'].value, DATE_FMT)
+                    updated['training_date'] = datetime.strptime(
+                        inputs['training_date'].value, DATE_FMT)
 
+                    # Check if updated is validated
                     def _check_inputs():
-                        return all([
-                            len(updated['username']) > 5,
-                            updated['password'] == updated['confirmPassword']
-                        ])
-                    print(_check_inputs())
+                        for k, foo in username_validation.items():
+                            if not foo(updated['username']):
+                                ui.notify(k, **NOTIFY_KWARGS.negative)
+                                return False
+                        if not updated['confirmPassword'] == updated['password']:
+                            ui.notify('两次密码不一致', **NOTIFY_KWARGS.negative)
+                            return False
 
-                    if on_edit_apply:
-                        on_edit_apply(updated)
+                        return True
+
+                    # Do nothing if not checked
+                    if not _check_inputs():
+                        return
+
+                    # New user does not require confirmPassword.
+                    updated.pop('confirmPassword')
+
+                    print(f'APPLY, {updated=}')
+                    user = user_server.create_user(**updated)
+                    if user is not None:
+                        ui.notify('New user is applied',
+                                  **NOTIFY_KWARGS.positive)
+                        if on_success is not None:
+                            record = f'time={user.created_at}; username={user.username}'
+                            on_success(record)
                     else:
-                        print(f'APPLY, {updated=}')
-                        # user_server.create_user(**updated)
-
-                    ui.notify('New user is applied')
+                        ui.notify('Failed create new user',
+                                  **NOTIFY_KWARGS.negative)
 
                 ui.button('Apply', on_click=apply).props('color=primary')
         render_detail()

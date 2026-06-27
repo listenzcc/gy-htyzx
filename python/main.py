@@ -18,6 +18,7 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
+from constants import *
 from page_components.headers import reuseable_header
 from page_components.login_page import login_login_card, login_signup_card
 from page_components.user_management_page import user_management_users
@@ -246,6 +247,7 @@ async def root():
 
 # ------------------------------------------------------------------------------
 
+
 @ui.page('/login')
 @with_layout
 async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
@@ -255,10 +257,34 @@ async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
         ui.navigate.to('/profile')
         return
 
+    records = []
+
+    def on_success_new_user(value=None):
+        if value is not None:
+            records.append(value)
+
+        n = len(records)
+
+        if n == 0:
+            contents = ['[No new user]']
+        else:
+            contents = [f'[{n-i}]: {e}' for i, e in enumerate(records[::-1])]
+
+        new_users_ta.set_value('\n'.join(contents))
+        return
+
     reuseable_header('Login & Signup')
     with ui.row().classes('w-full justify-evenly'):
         login_login_card(user_service, session_manager, app, redirect_to)
-        login_signup_card(user_service)
+        login_signup_card(user_service, on_success_new_user)
+
+    ui.separator()
+
+    # with ui.row().classes('w-full justify-evenly'):
+    ui.label('New users').classes(STYLES.cardTitleLabel)
+    new_users_ta = ui.textarea().classes('w-full')
+
+    on_success_new_user()
 
     return
 

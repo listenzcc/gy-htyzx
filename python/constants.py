@@ -41,6 +41,16 @@ class STYLES:
     pageSubTitle = 'text-gray-500 text-sm'
     pageBadgeText = 'text-sm italic'
 
+# Notify kwargs
+
+
+class NOTIFY_KWARGS:
+    # Negative
+    negative = {'position': 'center', 'type': 'negative'}
+
+    # Positive
+    positive = {'position': 'center', 'type': 'positive'}
+
 
 # Allowed chars for username & password
 ALLOWED_USERNAME = 'abcdefghijklmnopqrstuvwxyz1234567890._-@'
