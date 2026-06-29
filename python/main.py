@@ -19,6 +19,7 @@ Functions:
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
 from constants import *
+from page_components.experiments_page import experiments_gallery
 from page_components.headers import reuseable_header
 from page_components.login_page import login_login_card, login_signup_card
 from page_components.user_management_page import user_management_users
@@ -159,7 +160,7 @@ async def profile_page():
     if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
             ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
-        logger.error('Requring /profile page but not authenticated.')
+        logger.error('Requiring /profile page but not authenticated.')
         return
 
     reuseable_header('Profile', user.username)
@@ -189,14 +190,14 @@ async def user_management_page():
     if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
             ui.label('用户权限不足。').classes('text-red-500')
-        logger.error('Requring /user_management page but not authenticated.')
+        logger.error('Requiring /user_management page but not authenticated.')
         return
 
     # Check permission
     if not user.has_permission('view_users'):
         with make_it_center():
             ui.label('您没有查看用户的权限。').classes('text-red-500')
-        logger.error('Requring /user_management page but has no premission.')
+        logger.error('Requiring /user_management page but has no premission.')
         return
 
     reuseable_header('User Management')
@@ -207,6 +208,88 @@ async def user_management_page():
     user_management_users(id, user_service, on_edit_apply=_on_edit_apply)
 
     debug_block(f'{app.storage.user=}')
+    return
+
+# ------------------------------------------------------------------------------
+
+
+@ui.page('/experiments')
+@with_layout
+async def experiments_page():
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
+
+    # Not login
+    if user is None or not user.has_permission('just_walk_by'):
+        with make_it_center():
+            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+        logger.error('Requiring /experiments page but not authenticated.')
+        return
+
+    reuseable_header('Experiments', user.username)
+
+    experiments_gallery(user.id, user.uuid, user_service)
+    return
+
+# ------------------------------------------------------------------------------
+
+
+@ui.page('/intro')
+@with_layout
+async def intro_page():
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
+
+    # Not login
+    if user is None or not user.has_permission('just_walk_by'):
+        with make_it_center():
+            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+        logger.error('Requiring /intro page but not authenticated.')
+        return
+
+    reuseable_header('Intro', user.username)
+    return
+
+
+# ------------------------------------------------------------------------------
+@ui.page('/login')
+@with_layout
+async def login_page(redirect_to: str = '/') -> Optional[RedirectResponse]:
+
+    # Navigate to /profile if user is already login.
+    if app.storage.user.get('authenticated', False):
+        ui.navigate.to('/profile')
+        return
+
+    records = []
+
+    def on_success_new_user(value=None):
+        if value is not None:
+            records.append(value)
+
+        n = len(records)
+
+        if n == 0:
+            contents = ['[No new user]']
+        else:
+            contents = [f'[{n-i}]: {e}' for i, e in enumerate(records[::-1])]
+
+        new_users_ta.set_value('\n'.join(contents))
+        return
+
+    reuseable_header('Login & Signup')
+    with ui.row().classes('w-full justify-evenly'):
+        login_login_card(user_service, session_manager, app, redirect_to)
+        login_signup_card(user_service, on_success_new_user)
+
+    ui.separator()
+
+    # with ui.row().classes('w-full justify-evenly'):
+    ui.label('New users').classes(STYLES.cardTitleLabel)
+    new_users_ta = ui.textarea().classes('w-full')
+
+    on_success_new_user()
+
     return
 
 # ------------------------------------------------------------------------------
@@ -244,49 +327,6 @@ async def root():
 
     return
 
-
-# ------------------------------------------------------------------------------
-
-
-@ui.page('/login')
-@with_layout
-async def login(redirect_to: str = '/') -> Optional[RedirectResponse]:
-
-    # Navigate to /profile if user is already login.
-    if app.storage.user.get('authenticated', False):
-        ui.navigate.to('/profile')
-        return
-
-    records = []
-
-    def on_success_new_user(value=None):
-        if value is not None:
-            records.append(value)
-
-        n = len(records)
-
-        if n == 0:
-            contents = ['[No new user]']
-        else:
-            contents = [f'[{n-i}]: {e}' for i, e in enumerate(records[::-1])]
-
-        new_users_ta.set_value('\n'.join(contents))
-        return
-
-    reuseable_header('Login & Signup')
-    with ui.row().classes('w-full justify-evenly'):
-        login_login_card(user_service, session_manager, app, redirect_to)
-        login_signup_card(user_service, on_success_new_user)
-
-    ui.separator()
-
-    # with ui.row().classes('w-full justify-evenly'):
-    ui.label('New users').classes(STYLES.cardTitleLabel)
-    new_users_ta = ui.textarea().classes('w-full')
-
-    on_success_new_user()
-
-    return
 
 # %% ---- 2026-06-18 ------------------------
 # Play ground

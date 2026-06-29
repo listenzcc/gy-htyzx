@@ -8,22 +8,22 @@ from constants import *
 from auth.user_service import UserService
 
 
-def user_manager_header(title: str = "User Manager", badge: str = "List Users", icon: str = "person"):
-    """Reusable user manager header component"""
-    with ui.row().classes('items-center gap-3 mb-6 w-full'):
-        # Icon
-        ui.icon(icon, size='2.5rem').classes('text-primary')
+# def user_manager_header(title: str = "User Manager", badge: str = "List Users", icon: str = "person"):
+#     """Reusable user manager header component"""
+#     with ui.row().classes('items-center gap-3 mb-6 w-full'):
+#         # Icon
+#         ui.icon(icon, size='2.5rem').classes('text-primary')
 
-        # Title and subtitle
-        with ui.column().classes('gap-0'):
-            ui.label(title).classes('text-3xl font-bold tracking-tight')
+#         # Title and subtitle
+#         with ui.column().classes('gap-0'):
+#             ui.label(title).classes('text-3xl font-bold tracking-tight')
 
-        # Spacer and optional badge/status
-        ui.space()
+#         # Spacer and optional badge/status
+#         ui.space()
 
-        with ui.badge(badge, color='positive').classes('text-sm'):
-            pass
-    return
+#         with ui.badge(badge, color='positive').classes('text-sm'):
+#             pass
+#     return
 
 
 def user_management_users(id: int, user_service: UserService, on_edit_apply=None):
