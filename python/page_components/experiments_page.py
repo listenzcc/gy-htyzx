@@ -1,6 +1,7 @@
+import asyncio
 import sys
 import subprocess
-from nicegui import ui
+from nicegui import ui, events
 from pathlib import Path
 from datetime import datetime
 
@@ -18,11 +19,33 @@ class EXP:
         abstract='abstract')
 
 
-def start_experiment(dct: dict, uuid: str = 'uuid'):
-    ui.notify(f'Start experiment: {dct=}', **NOTIFY_KWARGS.positive)
-    output_dir = f'./data/{uuid}/{dct["cn"]}'
+def run_experiment(dct, output_dir):
     subprocess.run(['conda', 'run', '-n', CONDA_ENV, 'python',
-                   dct['script'], '--path', output_dir])
+                   dct['script'], '--path', output_dir.as_posix()])
+    # import time
+    # time.sleep(1)  # Simulate work
+    return
+
+
+async def start_experiment(event: events.ClickEventArguments, dct: dict, uuid: str = 'uuid'):
+    btn = event.sender
+
+    try:
+        btn.disable()
+
+        output_dir = Path(
+            './data', uuid, dct['cn'], datetime.strftime(datetime.now(), FILE_DATE_FMT))
+
+        ui.notify(
+            f'Start experiment: {dct=}, {output_dir=}', **NOTIFY_KWARGS.positive)
+
+        # Run blocking code in thread
+        await asyncio.to_thread(run_experiment, dct, output_dir)
+
+    finally:
+        btn.enable()
+
+    return
 
 
 def experiments_gallery(id: int, uuid: str, user_service: UserService):
@@ -39,7 +62,7 @@ def experiments_gallery(id: int, uuid: str, user_service: UserService):
             ui.label(exp['script'])
             ui.textarea(value=exp['abstract'])
             ui.textarea(value=open(exp['script'], encoding='utf-8').read())
-            ui.button('Launch', on_click=lambda _: start_experiment(exp, uuid))
+            ui.button('Launch', on_click=lambda e: start_experiment(e, exp, uuid))
         card_a = card
 
     return

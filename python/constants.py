@@ -58,6 +58,7 @@ ALLOWED_PASSWORD = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*-=_+()[]{}<>'
 
 # Format
 DATE_FMT = '%Y-%m-%d'
+FILE_DATE_FMT = '%Y%m%d_%H%M%S'
 
 # How to generate a new user
 NEW_USER_DCT = {

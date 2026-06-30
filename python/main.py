@@ -304,12 +304,12 @@ async def root():
         if app.storage.user.get('authenticated', False):
             ui.button('Profile', icon='dashboard',
                       on_click=lambda: ui.navigate.to('/profile')).props('color=primary')
-            ui.button('Experiments', icon='sensors',
-                      on_click=lambda: ui.navigate.to('/experiments')).props('color=secondary')
-            ui.button('Others', icon='science',
-                      on_click=lambda: ui.navigate.to('/others')).props('color=accent')
+            ui.button('Experiments', icon='science',
+                      on_click=lambda: ui.navigate.to('/experiments')).props('color=accent')
             ui.button('User Management', icon='book',
                       on_click=lambda: ui.navigate.to('/user_management')).props('color=green')
+            ui.button('Others', icon='sensors',
+                      on_click=lambda: ui.navigate.to('/others')).props('color=secondary')
         else:
             ui.button('立即登录', icon='login',
                       on_click=lambda: ui.navigate.to('/login')).props('color=primary')
