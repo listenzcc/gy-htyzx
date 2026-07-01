@@ -11,6 +11,11 @@ sys.path.append('..')  # noqa
 from constants import *
 from auth.user_service import UserService
 
+password_validation = {
+    '密码过短': lambda value: len(value) > 5,
+    '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
+}
+
 
 def user_management_users(id: int, user_service: UserService, on_edit_apply=None):
     users = sorted([e.to_dict()
@@ -338,16 +343,16 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 detail_card.clear()
 
                 with detail_card:
-                    if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                        ui.label('Permission Deny').classes(STYLES.errorText)
-                        return
-
                     ui.label('User Detail').classes(STYLES.cardTitleLabel)
-
                     # u is the dict from auth.models.User.to_dict
                     u = selected['user']
                     if not u:
                         ui.label('Select a user').classes(STYLES.plainText)
+                        return
+
+                    # Not allow edit if not has permission and not the user itself
+                    if not any([user_service.get_user_by_id(id).has_permission('edit_users'), id == u.get('id')]):
+                        ui.label('Permission Deny').classes(STYLES.errorText)
                         return
 
                     # immutable fields (grey / disabled)
@@ -397,21 +402,75 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         new_value_mode='add'
                     )
 
+                    # Password
+                    with ui.expansion('Change Password', icon='lock'):
+                        # ui.input('Current Password', placeholder='Enter current password').props(
+                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
+                        #     'type=password').validation(password_validation)
+                        # ui.input('Password', placeholder='Enter new password').props(
+                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
+                        #     'type=password').validation(password_validation)
+                        # ui.input('Confirm Password', placeholder='Confirm new password').props(
+                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
+                        #     'type=password').validation(password_validation)
+
+                        def _v():
+                            return inputs['new_password'].value == inputs['confirm_password'].value
+                        confirm_password_validation = {
+                            k: v for k, v in password_validation.items()}
+                        confirm_password_validation.update({
+                            '密码不一致': lambda _: _v()
+                        })
+                        inputs['password'] = ui.input(
+                            'Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                        inputs['new_password'] = ui.input(
+                            'New Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                        inputs['confirm_password'] = ui.input(
+                            'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
+
                     # Apply
                     def apply():
-                        if not user_service.get_user_by_id(id).has_permission('edit_users'):
+                        # Check permission again before applying changes
+                        # Not allow edit if not has permission and not the user itself
+                        if not any([user_service.get_user_by_id(id).has_permission('edit_users'), id == u.get('id')]):
                             ui.notify('Permission Deny').classes(
                                 'text-red-800')
                             return
 
                         updated = dict(u)
 
-                        updated['role'] = inputs['role'].value
-                        updated['gender'] = inputs['gender'].value
-                        updated['education'] = inputs['education'].value
-                        updated['is_active'] = inputs['is_active'].value
-                        updated['birth_date'] = inputs['birth_date'].value or None
-                        updated['training_date'] = inputs['training_date'].value or None
+                        password = inputs['new_password'].value.strip()
+                        if password:
+                            # If the user is trying to change their own password, check the current password
+                            if id == u.get('id') and not user_service.get_user_by_id(id).check_password(inputs['password'].value.strip()):
+                                ui.notify('试图修改自己的密码，但当前密码不正确', **
+                                          NOTIFY_KWARGS.negative)
+                                return
+
+                            # Check if the new password and confirm password match
+                            if not password == inputs['confirm_password'].value.strip():
+                                ui.notify('试图修改密码，但两次密码输入不一致', **
+                                          NOTIFY_KWARGS.negative)
+                                return
+
+                            # Check if the new password meets the validation criteria
+                            for k, v in password_validation.items():
+                                if not v(password):
+                                    ui.notify(
+                                        f'试图修改密码，但不符合要求: {k}', **NOTIFY_KWARGS.negative)
+                                    return
+
+                            updated['password'] = password
+
+                        keys = ['role', 'gender', 'education',
+                                'is_active', 'birth_date', 'training_date']
+                        updated.update({k: inputs[k].value for k in keys})
+
+                        trow = table.rows[[r['id']
+                                           for r in table.rows].index(u['id'])]
+                        for key in keys:
+                            trow[key] = updated[key]
+                        table.update()
 
                         if on_edit_apply:
                             on_edit_apply(updated)
@@ -419,8 +478,10 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                             print(f'APPLY, {updated=}')
 
                         ui.notify('Changes are applied')
+                        return
 
                     ui.button('Apply', on_click=apply).props('color=primary')
+
                 return
 
         # Data

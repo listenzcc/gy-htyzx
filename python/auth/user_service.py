@@ -150,6 +150,12 @@ class UserService:
 
             self.session.commit()
             logger.info(f"用户信息已修改: {updated}")
+
+            if updated.get('password'):
+                user.set_password(updated['password'])
+                self.session.commit()
+                logger.info(f"用户密码已修改: {user.username}")
+
             return True
 
         except Exception as e:
