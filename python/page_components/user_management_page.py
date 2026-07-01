@@ -1,227 +1,15 @@
 import sys
+import pandas as pd
+
 from nicegui import ui
+from pathlib import Path
 from datetime import datetime
+
 from .inputs import date_input
 
 sys.path.append('..')  # noqa
 from constants import *
 from auth.user_service import UserService
-
-
-def user_management_users_bak(id: int, user_service: UserService, on_edit_apply=None):
-    users = sorted([e.to_dict()
-                   for e in user_service.list_users()], key=lambda e: e['id'])
-
-    if not users:
-        with ui.card().classes('w-full p-8 bg-gray-50'):
-            ui.icon('people_outline', size='3rem').classes(
-                'text-gray-400 mx-auto')
-            ui.label('No users found').classes(
-                'text-gray-500 text-center text-lg')
-        return
-
-    selected = {'user': None}
-
-    columns = [
-        dict(name='id', label='ID'),
-        dict(name='username', label='Username'),
-        dict(name='role', label='Role'),
-        dict(name='gender', label='Gender'),
-        dict(name='birth_date', label='BirthDate'),
-        dict(name='training_date', label='TrainingDate'),
-        dict(name='education', label='Education'),
-        dict(name='is_active', label='IsActive'),
-        dict(name='created_at', label='CreatedAt'),
-    ]
-
-    [e.update({'field': e['name'], 'sortable': True}) for e in columns]
-
-    rows = []
-    user_map = {}
-
-    # user is dict
-    for user in users:
-        user_map[user['id']] = user
-
-        is_active = (
-            '<span class="text-green-600">🟢 Active</span>'
-            if user.get('is_active')
-            else '<span class="text-red-600">🔴 Inactive</span>'
-        )
-
-        created = user.get('created_at')
-        if isinstance(created, datetime):
-            created = created.strftime('%Y-%m-%d %H:%M')
-        elif isinstance(created, str):
-            try:
-                created = datetime.fromisoformat(created.replace(
-                    'Z', '+00:00')).strftime('%Y-%m-%d %H:%M')
-            except Exception:
-                pass
-
-        role_class = ROLES.get(
-            user.get('role'),
-            STYLES.plainText
-        )
-
-        role = (
-            f'<span class="px-2 py-1 rounded {role_class}">'
-            f'{user.get("role", "—")}'
-            f'</span>'
-        )
-
-        gender_class = GENDERS.get(
-            user.get('gender'),
-            STYLES.plainText
-        )
-
-        gender = (
-            f'<span class="px-2 py-1 rounded {gender_class}">'
-            f'{user.get("gender", "—")}'
-            f'</span>'
-        )
-
-        education_class = EDUCATIONS.get(
-            user.get('education'),
-            STYLES.plainText
-        )
-
-        education = (
-            f'<span class="px-2 py-1 rounded {education_class}">'
-            f'{user.get("education", "—")}'
-            f'</span>'
-        )
-
-        rows.append({
-            'id': user['id'],
-            'username': user['username'],
-            'role': role,
-            'is_active': is_active,
-            'created_at': created or '—',
-            'training_date': user['training_date'],
-            'birth_date': user['birth_date'],
-            'education': education,
-            'gender': gender
-        })
-
-    # --- UI layout: table + detail panel ---
-
-    # List users table
-    with ui.card().classes(STYLES.fullCard):
-        ui.label('User List').classes(STYLES.cardTitleLabel)
-        with ui.table(
-            rows=rows,
-            columns=columns,
-            row_key='id',
-            pagination={'rowsPerPage': 10},
-        ).classes('w-full').props('dense bordered flat') as table:
-
-            def select_row(e):
-                row = e.args[1]
-                selected['user'] = user_map.get(row['id'])
-                render_detail()
-
-            table.on('row-click', select_row)
-
-            for cell in ['role', 'is_active', 'gender', 'education']:
-                table.add_slot(f'body-cell-{cell}', r'''
-                    <q-td :props="props"><span v-html="props.value"></span></q-td>
-                ''')
-
-    # detail edit table
-    with ui.card().classes(STYLES.column3Card) as detail_card:
-        ui.label('Select a user').classes(STYLES.cardTitleLabel)
-
-        inputs = {}
-
-        def render_detail():
-
-            detail_card.clear()
-
-            with detail_card:
-                if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                    ui.label('Permission Deny').classes(STYLES.errorText)
-                    return
-
-                ui.label('User Detail').classes(STYLES.cardTitleLabel)
-
-                # u is the dict from auth.models.User.to_dict
-                u = selected['user']
-                if not u:
-                    ui.label('Select a user').classes(STYLES.plainText)
-                    return
-
-                # immutable fields (grey / disabled)
-                with ui.row():
-                    ui.input('ID', value=u.get('id')).props(
-                        'disable').classes(STYLES.nonEditable)
-                    inputs['is_active'] = ui.switch(
-                        'Active', value=u.get('is_active'))
-                ui.input('Username', value=u.get('username')).props(
-                    'disable').classes(STYLES.nonEditable)
-                ui.input('UUID', value=u.get('uuid')).props(
-                    'disable').classes(STYLES.nonEditable + ' w-full')
-
-                # Role & gender
-                with ui.row().classes('w-full'):
-                    inputs['role'] = ui.select(
-                        options=list(ROLES),
-                        label='Role',
-                        value=u.get('role')
-                    ).classes('w-1/3')
-                    inputs['gender'] = ui.select(
-                        options=list(GENDERS),
-                        label='Gender',
-                        value=u.get('gender')
-                    ).classes('w-1/3')
-
-                # With date handling
-                # Birth
-                birth = u.get('birth_date')
-                inputs['birth_date'] = date_input(
-                    'Birth Date', birth.strftime(DATE_FMT))
-
-                # Training
-                training = u.get('training_date')
-                inputs['training_date'] = date_input(
-                    'Training Date', training.strftime(DATE_FMT))
-
-                # Education
-                education = u.get('education')
-                options = [e for e in EDUCATIONS]
-                if not education in options:
-                    options.append(education)
-                inputs['education'] = ui.select(
-                    options=options,
-                    value=education,
-                    label='Education',
-                    new_value_mode='add'
-                )
-
-                # Apply
-                def apply():
-                    if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                        ui.notify('Permission Deny').classes('text-red-800')
-                        return
-
-                    updated = dict(u)
-
-                    updated['role'] = inputs['role'].value
-                    updated['gender'] = inputs['gender'].value
-                    updated['education'] = inputs['education'].value
-                    updated['is_active'] = inputs['is_active'].value
-                    updated['birth_date'] = inputs['birth_date'].value or None
-                    updated['training_date'] = inputs['training_date'].value or None
-
-                    if on_edit_apply:
-                        on_edit_apply(updated)
-                    else:
-                        print(f'APPLY, {updated=}')
-
-                    ui.notify('Changes are applied')
-
-                ui.button('Apply', on_click=apply).props('color=primary')
-    return
 
 
 def user_management_users(id: int, user_service: UserService, on_edit_apply=None):
@@ -337,7 +125,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
     # Filter section
     # .classes('w-full mb-4 p-4 bg-gray-50'):
-    with ui.card().classes(STYLES.fullCard):
+    # with ui.card().classes(STYLES.fullCard):
+    with ui.expansion('Click to Toggle Filter', icon='menu').classes('w-full'):
         # .classes('text-lg font-bold mb-2')
         ui.label('Filters').classes(STYLES.cardTitleLabel)
 
@@ -527,6 +316,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 row = e.args[1]
                 selected['user'] = user_map.get(row['id'])
                 render_detail()
+                render_data()
+                return
 
             table.on('row-click', select_row)
 
@@ -535,97 +326,195 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     <q-td :props="props"><span v-html="props.value"></span></q-td>
                 ''')
 
-    # detail edit table
-    with ui.card().classes(STYLES.column3Card) as detail_card:
-        ui.label('Select a user').classes(STYLES.cardTitleLabel)
+    with ui.row().classes('w-full gap-0'):
+        # detail edit table
+        with ui.card().classes(STYLES.column3Card) as detail_card:
+            ui.label('Select a user').classes(STYLES.cardTitleLabel)
 
-        inputs = {}
+            inputs = {}
 
-        def render_detail():
+            def render_detail():
 
-            detail_card.clear()
+                detail_card.clear()
 
-            with detail_card:
-                if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                    ui.label('Permission Deny').classes(STYLES.errorText)
-                    return
-
-                ui.label('User Detail').classes(STYLES.cardTitleLabel)
-
-                # u is the dict from auth.models.User.to_dict
-                u = selected['user']
-                if not u:
-                    ui.label('Select a user').classes(STYLES.plainText)
-                    return
-
-                # immutable fields (grey / disabled)
-                with ui.row():
-                    ui.input('ID', value=u.get('id')).props(
-                        'disable').classes(STYLES.nonEditable)
-                    inputs['is_active'] = ui.switch(
-                        'Active', value=u.get('is_active'))
-                ui.input('Username', value=u.get('username')).props(
-                    'disable').classes(STYLES.nonEditable)
-                ui.input('UUID', value=u.get('uuid')).props(
-                    'disable').classes(STYLES.nonEditable + ' w-full')
-
-                # Role & gender
-                with ui.row().classes('w-full'):
-                    inputs['role'] = ui.select(
-                        options=list(ROLES),
-                        label='Role',
-                        value=u.get('role')
-                    ).classes('w-1/3')
-                    inputs['gender'] = ui.select(
-                        options=list(GENDERS),
-                        label='Gender',
-                        value=u.get('gender')
-                    ).classes('w-1/3')
-
-                # With date handling
-                # Birth
-                birth = u.get('birth_date')
-                inputs['birth_date'] = date_input(
-                    'Birth Date', birth.strftime(DATE_FMT))
-
-                # Training
-                training = u.get('training_date')
-                inputs['training_date'] = date_input(
-                    'Training Date', training.strftime(DATE_FMT))
-
-                # Education
-                education = u.get('education')
-                options = [e for e in EDUCATIONS]
-                if not education in options:
-                    options.append(education)
-                inputs['education'] = ui.select(
-                    options=options,
-                    value=education,
-                    label='Education',
-                    new_value_mode='add'
-                )
-
-                # Apply
-                def apply():
+                with detail_card:
                     if not user_service.get_user_by_id(id).has_permission('edit_users'):
-                        ui.notify('Permission Deny').classes('text-red-800')
+                        ui.label('Permission Deny').classes(STYLES.errorText)
                         return
 
-                    updated = dict(u)
+                    ui.label('User Detail').classes(STYLES.cardTitleLabel)
 
-                    updated['role'] = inputs['role'].value
-                    updated['gender'] = inputs['gender'].value
-                    updated['education'] = inputs['education'].value
-                    updated['is_active'] = inputs['is_active'].value
-                    updated['birth_date'] = inputs['birth_date'].value or None
-                    updated['training_date'] = inputs['training_date'].value or None
+                    # u is the dict from auth.models.User.to_dict
+                    u = selected['user']
+                    if not u:
+                        ui.label('Select a user').classes(STYLES.plainText)
+                        return
 
-                    if on_edit_apply:
-                        on_edit_apply(updated)
-                    else:
-                        print(f'APPLY, {updated=}')
+                    # immutable fields (grey / disabled)
+                    with ui.row():
+                        ui.input('ID', value=u.get('id')).props(
+                            'disable').classes(STYLES.nonEditable)
+                        inputs['is_active'] = ui.switch(
+                            'Active', value=u.get('is_active'))
+                    ui.input('Username', value=u.get('username')).props(
+                        'disable').classes(STYLES.nonEditable)
+                    ui.input('UUID', value=u.get('uuid')).props(
+                        'disable').classes(STYLES.nonEditable + ' w-full')
 
-                    ui.notify('Changes are applied')
+                    # Role & gender
+                    with ui.row().classes('w-full'):
+                        inputs['role'] = ui.select(
+                            options=list(ROLES),
+                            label='Role',
+                            value=u.get('role')
+                        ).classes('w-1/3')
+                        inputs['gender'] = ui.select(
+                            options=list(GENDERS),
+                            label='Gender',
+                            value=u.get('gender')
+                        ).classes('w-1/3')
 
-                ui.button('Apply', on_click=apply).props('color=primary')
+                    # With date handling
+                    # Birth
+                    birth = u.get('birth_date')
+                    inputs['birth_date'] = date_input(
+                        'Birth Date', birth.strftime(DATE_FMT))
+
+                    # Training
+                    training = u.get('training_date')
+                    inputs['training_date'] = date_input(
+                        'Training Date', training.strftime(DATE_FMT))
+
+                    # Education
+                    education = u.get('education')
+                    options = [e for e in EDUCATIONS]
+                    if not education in options:
+                        options.append(education)
+                    inputs['education'] = ui.select(
+                        options=options,
+                        value=education,
+                        label='Education',
+                        new_value_mode='add'
+                    )
+
+                    # Apply
+                    def apply():
+                        if not user_service.get_user_by_id(id).has_permission('edit_users'):
+                            ui.notify('Permission Deny').classes(
+                                'text-red-800')
+                            return
+
+                        updated = dict(u)
+
+                        updated['role'] = inputs['role'].value
+                        updated['gender'] = inputs['gender'].value
+                        updated['education'] = inputs['education'].value
+                        updated['is_active'] = inputs['is_active'].value
+                        updated['birth_date'] = inputs['birth_date'].value or None
+                        updated['training_date'] = inputs['training_date'].value or None
+
+                        if on_edit_apply:
+                            on_edit_apply(updated)
+                        else:
+                            print(f'APPLY, {updated=}')
+
+                        ui.notify('Changes are applied')
+
+                    ui.button('Apply', on_click=apply).props('color=primary')
+                return
+
+        # Data
+        with ui.card().classes(STYLES.column3_2Card) as data_card:
+            # 标题栏（增加全屏按钮）
+            with ui.row().classes('w-full justify-between items-center'):
+                ui.label('Experiment Data').classes(STYLES.cardTitleLabel)
+                ui.button(icon='fullscreen',
+                          on_click=lambda: toggle_fullscreen())
+
+            is_fullscreen = {'value': False}
+
+            def toggle_fullscreen():
+                if is_fullscreen['value']:
+                    data_card.classes(remove='w-full padding-4')
+                    is_fullscreen['value'] = False
+                else:
+                    data_card.classes(add='w-full padding-4')
+                    is_fullscreen['value'] = True
+                return
+
+            def render_data():
+                data_card.clear()
+
+                with data_card:
+                    if not user_service.get_user_by_id(id).has_permission('view_users'):
+                        ui.label('Permission Deny').classes(STYLES.errorText)
+                        return
+
+                    u = selected['user']
+                    if not u:
+                        ui.label('Select a user').classes(STYLES.plainText)
+                        return
+
+                    # 标题栏（增加全屏按钮）
+                    with ui.row().classes('w-full justify-between items-center'):
+                        ui.label(f'Experiment Data: {u["username"]}').classes(
+                            STYLES.cardTitleLabel)
+                        ui.button(icon='fullscreen',
+                                  on_click=lambda: toggle_fullscreen())
+
+                    # Search for records in ./data/{uuid}/*$exp*/*$dt*/*.csv
+                    data_folder = Path(f'./data/{u["uuid"]}')
+                    if not data_folder.is_dir():
+                        ui.label('No data found').classes(STYLES.errorText)
+                        return
+                    records = []
+                    for experiment_folder in [e for e in data_folder.iterdir() if e.is_dir()]:
+                        for time_folder in [e for e in experiment_folder.iterdir() if e.is_dir()]:
+                            file = [e for e in time_folder.glob('*.csv')][0]
+                            dt = datetime.strptime(
+                                time_folder.name, FILE_DATE_FMT)
+                            records.append((experiment_folder.name, dt, file))
+                    records = pd.DataFrame(
+                        records, columns=['experiment', 'datetime', 'file'])
+
+                    # Make table
+                    columns = [
+                        dict(name='id', label='ID'),
+                        dict(name='experiment', label='Experiment'),
+                        dict(name='datetime', label='Datetime'),
+                    ]
+
+                    [e.update({'field': e['name'], 'sortable': True})
+                     for e in columns]
+
+                    rows = [{'id': i, 'experiment': row['experiment'], 'datetime': row['datetime'].isoformat()}
+                            for i, row in records.iterrows()]
+
+                    with ui.table(
+                        rows=rows,
+                        columns=columns,
+                        row_key='id',
+                        pagination={'rowsPerPage': 10},
+                    ).classes('w-full').props('dense bordered flat') as table:
+                        def select_row(e):
+                            selected_row = e.args[1]
+                            row = records.iloc[selected_row['id']]
+                            df = pd.read_csv(row['file'])
+                            record_card.clear()
+                            with record_card:
+                                ui.label(f'Record Preview: {row["experiment"]} | {row["datetime"].isoformat()}').classes(
+                                    STYLES.cardTitleLabel)
+                                ui.table.from_pandas(df).classes('w-full')
+                            return
+
+                        table.on('row-click', select_row)
+                        pass
+
+                    record_card = ui.card().classes('w-full mt-4')
+                    with record_card:
+                        ui.label('Record Preview [Select a row]').classes(
+                            STYLES.cardTitleLabel)
+
+                return
+
     return
