@@ -43,7 +43,7 @@ def login_login_card(
         ui.notify('Wrong username or password', color='negative')
         return False
 
-    with ui.card().classes(STYLES.columnCard):  # .classes('absolute-center'):
+    with ui.card().classes(STYLES.column3Card):  # .classes('absolute-center'):
         ui.label('Login').classes(STYLES.cardTitleLabel)
         username = ui.input('Username', validation=username_validation).classes(
             'w-full').on('keydown.enter', try_login)
@@ -56,7 +56,7 @@ def login_login_card(
 
 def login_signup_card(user_server: UserService, on_success: None):
 
-    with ui.card().classes(STYLES.columnCard) as detail_card:
+    with ui.card().classes(STYLES.column3Card) as detail_card:
         ui.label('Signup').classes(STYLES.cardTitleLabel)
 
         inputs = {}

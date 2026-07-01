@@ -129,7 +129,7 @@ def user_management_users_bak(id: int, user_service: UserService, on_edit_apply=
                 ''')
 
     # detail edit table
-    with ui.card().classes(STYLES.columnCard) as detail_card:
+    with ui.card().classes(STYLES.column3Card) as detail_card:
         ui.label('Select a user').classes(STYLES.cardTitleLabel)
 
         inputs = {}
@@ -536,7 +536,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 ''')
 
     # detail edit table
-    with ui.card().classes(STYLES.columnCard) as detail_card:
+    with ui.card().classes(STYLES.column3Card) as detail_card:
         ui.label('Select a user').classes(STYLES.cardTitleLabel)
 
         inputs = {}

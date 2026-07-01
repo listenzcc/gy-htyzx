@@ -33,7 +33,8 @@ class STYLES:
 
     # Card
     fullCard = 'w-full shadow-lg border'
-    columnCard = 'w-1/3 shadow-lg border'
+    column3Card = 'w-1/3 shadow-lg border'
+    column4Card = 'w-1/4 shadow-lg border'
     cardTitleLabel = 'text-lg font-semibold'
 
     # Page
