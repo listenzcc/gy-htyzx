@@ -27,6 +27,7 @@ class STYLES:
     # Text
     plainText = 'text-gray-800'
     errorText = 'text-red-800'
+    attentionText = 'text-red-600'
 
     # Input
     nonEditable = 'bg-gray-100'

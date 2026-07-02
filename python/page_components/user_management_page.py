@@ -346,13 +346,19 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     ui.label('User Detail').classes(STYLES.cardTitleLabel)
                     # u is the dict from auth.models.User.to_dict
                     u = selected['user']
+
+                    allow_edit_users = user_service.get_user_by_id(
+                        id).has_permission('edit_users')
+                    is_self = id == u.get('id') if u else False
+
                     if not u:
                         ui.label('Select a user').classes(STYLES.plainText)
                         return
 
                     # Not allow edit if not has permission and not the user itself
-                    if not any([user_service.get_user_by_id(id).has_permission('edit_users'), id == u.get('id')]):
-                        ui.label('Permission Deny').classes(STYLES.errorText)
+                    if not any([allow_edit_users, is_self]):
+                        ui.label('您既不是管理员也不是本人，因此无权查看和编辑此用户。').classes(
+                            STYLES.errorText)
                         return
 
                     # immutable fields (grey / disabled)
@@ -404,16 +410,6 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                     # Password
                     with ui.expansion('Change Password', icon='lock'):
-                        # ui.input('Current Password', placeholder='Enter current password').props(
-                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
-                        #     'type=password').validation(password_validation)
-                        # ui.input('Password', placeholder='Enter new password').props(
-                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
-                        #     'type=password').validation(password_validation)
-                        # ui.input('Confirm Password', placeholder='Confirm new password').props(
-                        #     # .on('input', lambda e: setattr(inputs.setdefault('password', {}), 'value', e.args[0]))
-                        #     'type=password').validation(password_validation)
-
                         def _v():
                             return inputs['new_password'].value == inputs['confirm_password'].value
                         confirm_password_validation = {
@@ -421,6 +417,12 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         confirm_password_validation.update({
                             '密码不一致': lambda _: _v()
                         })
+                        if is_self:
+                            ui.label('您正在修改本人的密码，请输入您的当前密码以验证身份。').classes(
+                                STYLES.attentionText)
+                        else:
+                            ui.label('您正在修改他人的密码，请输入您的当前密码以验证身份。').classes(
+                                STYLES.attentionText)
                         inputs['password'] = ui.input(
                             'Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
                         inputs['new_password'] = ui.input(
@@ -432,7 +434,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     def apply():
                         # Check permission again before applying changes
                         # Not allow edit if not has permission and not the user itself
-                        if not any([user_service.get_user_by_id(id).has_permission('edit_users'), id == u.get('id')]):
+                        if not any([allow_edit_users, is_self]):
                             ui.notify('Permission Deny').classes(
                                 'text-red-800')
                             return
@@ -442,10 +444,15 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         password = inputs['new_password'].value.strip()
                         if password:
                             # If the user is trying to change their own password, check the current password
-                            if id == u.get('id') and not user_service.get_user_by_id(id).check_password(inputs['password'].value.strip()):
-                                ui.notify('试图修改自己的密码，但当前密码不正确', **
-                                          NOTIFY_KWARGS.negative)
-                                return
+                            if not user_service.get_user_by_id(id).check_password(inputs['password'].value.strip()):
+                                if is_self:
+                                    ui.notify('试图修改自己的密码，但当前密码不正确', **
+                                              NOTIFY_KWARGS.negative)
+                                    return
+                                else:
+                                    ui.notify('试图修改他人的密码，但当前密码不正确', **
+                                              NOTIFY_KWARGS.negative)
+                                    return
 
                             # Check if the new password and confirm password match
                             if not password == inputs['confirm_password'].value.strip():
