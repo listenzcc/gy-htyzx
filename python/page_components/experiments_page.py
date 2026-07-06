@@ -72,9 +72,15 @@ def experiments_gallery(id: int, uuid: str, user_service: UserService):
     # with ui.card().classes(STYLES.fullCard):
     row_styles = 'w-full gap-4 justify-center items-start'
     with ui.row().classes('w-full gap-2 justify-center'):
-        for type_name in EXP.type_dct.keys():
-            with ui.expansion(type_name).classes('w-full gap-2 justify-center'):
+        for type_name, sub_type_names in EXP.type_dct.items():
+            if sub_type_names:
+                text = f'{type_name} > {" | ".join(sorted(sub_type_names))}'
+            else:
+                text = f'{type_name}'
+            with ui.expansion(text).classes('w-full gap-2 justify-center') as _expansion:
                 type_field[type_name] = ui.row().classes(row_styles)
+
+        _expansion.set_value(True)
 
         # ----------------------------------------------------------------------
         for exp in EXP.experiments:
@@ -91,41 +97,21 @@ def experiments_gallery(id: int, uuid: str, user_service: UserService):
                     ui.textarea(value=exp.get('abstract', '--')).classes(
                         'w-full').props('readonly')
 
-                    use_default_value = True
-                    if options:
-                        with ui.expansion('实验选项').classes('w-full'):
-                            for opt in options:
-                                if opt.startswith('#'):
-                                    use_default_value = False
-
-                                if not opt.startswith('-'):
-                                    ui.label(opt)
-                                    continue
-
-                                opt = opt.replace(
-                                    '-', '').replace(',', ' ').replace(':', ' ').strip()
-                                opts = [e.strip()
-                                        for e in opt.split() if e.strip()]
-
-                                n = opts[0]
-                                t = opts[1]
-                                if t == 'int':
-                                    values = [int(opts[2]), int(opts[3])]
-                                    with ui.row().classes('w-full'):
-                                        input_options[exp['script']][n] = ui.number(
-                                            label=f'{n}({t})', min=values[0], max=values[1], step=1, value=values[0] if use_default_value else None).classes('w-full')
-                                elif t == 'float':
-                                    values = [float(opts[2]), float(opts[3])]
-                                    step = (values[1] - values[0]) / 100
-                                    with ui.row().classes('w-full'):
-                                        input_options[exp['script']][n] = ui.number(
-                                            label=f'{n}({t})', min=values[0], max=values[1], step=step, value=values[0] if use_default_value else None).classes('w-full')
-                                elif t == 'option':
-                                    values = opts[2:]
-                                    input_options[exp['script']][n] = ui.select(
-                                        options=values, label=f'{n}({t})', value=values[0] if use_default_value else None).classes('w-full')
-                                else:
-                                    ui.label(opt).classes(STYLES.errorText)
+                    options = exp['formatted_options']
+                    with ui.expansion('实验选项').classes('w-full'):
+                        for opt in options:
+                            if opt['type'] == 'mention':
+                                ui.label(opt['content']).classes(
+                                    STYLES.errorText)
+                            elif opt['type'] == 'int':
+                                input_options[exp['script']][opt['name']] = ui.number(
+                                    label=opt['name'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
+                            elif opt['type'] == 'float':
+                                input_options[exp['script']][opt['name']] = ui.number(
+                                    label=opt['name'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
+                            elif opt['type'] == 'option':
+                                input_options[exp['script']][opt['name']] = ui.select(
+                                    label=opt['name'], options=opt['options'], value=opt['value']).classes('w-full')
 
                     ui.button(
                         'Launch', on_click=lambda e, exp=exp: start_experiment(e, exp, uuid, input_options[exp['script']]))

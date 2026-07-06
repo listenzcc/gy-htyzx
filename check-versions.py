@@ -1,5 +1,7 @@
+import rich
 import loguru
 import pandas
+import textual
 import fastapi
 import nicegui
 import psychopy
@@ -12,6 +14,8 @@ import latex2mathml
 
 lst = ['# python==3.11.15']
 for e in [
+    rich,
+    textual,
     loguru,
     pandas,
     fastapi,

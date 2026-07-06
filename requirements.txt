@@ -1,4 +1,6 @@
 # python==3.11.15
+rich
+textual==8.2.8
 loguru==0.7.3
 pandas==3.0.3
 fastapi==0.137.1
