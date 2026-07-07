@@ -28,12 +28,12 @@ def parse_options(options):
             if content == '# 以下不是必须参数，提供默认值即可':
                 use_none_as_default = True
                 formulated_options.append(
-                    {'type': 'mention', 'content': content})
+                    {'type': 'mention', 'content': content, 'level': 'info'})
                 continue
 
             if not content.startswith('-'):
                 formulated_options.append(
-                    {'type': 'mention', 'content': content})
+                    {'type': 'mention', 'content': content, 'level': 'warning'})
                 continue
 
             for k, v in options_replacement_map.items():
@@ -78,6 +78,7 @@ def parse_options(options):
         except Exception as err:
             formulated_options.append({
                 'type': 'mention',
+                'level': 'error',
                 'content': f'{opt=}, {err=}'
             })
 
@@ -140,7 +141,10 @@ class Experiments:
         Generate formatted_options.
         '''
         for exp in self.experiments:
-            exp['formatted_options'] = parse_options(exp['options'])
+            opts = parse_options(exp['options'])
+            exp['has_mention'] = any(
+                opt.get('type') == 'mention' for opt in opts)
+            exp['formatted_options'] = opts
         return
 
 
@@ -169,29 +173,90 @@ if __name__ == '__main__':
             for k, v in opt.items():
                 print(f'{k}: {v}')
 
-    from textual.app import App, ComposeResult
+    from textual.app import App, ComposeResult, Binding
     from textual.containers import Container, ScrollableContainer
     from textual.widgets import Header, Footer, Label, ListView, ListItem, Static
 
     class ExperimentApp(App):
+        BINDINGS = [
+            Binding("a", "filter_all", "Filter all"),
+            Binding("i", "filter_info", "Filter info"),
+            Binding("w", "filter_warning", "Filter warning"),
+            Binding("e", "filter_error", "Filter error"),
+            Binding("m", "toggle_mention", "Toggle mention"),
+            Binding("q", "request_quit", "Quit"),
+        ]
+
+        mention_only = True
+        mention_level = ''
+
         def __init__(self, experiments):
             super().__init__()
             self.experiments = experiments
-            self.mention_experiments = {}
+            self.selected_experiments = {}
             self.process_data()
 
+        def _restore_focus(self):
+            self.query_one("#experiment-list").focus()
+
+        def action_request_quit(self):
+            self.app.exit()
+
+        def action_filter_all(self):
+            self.mention_level = ''
+            self._refresh()
+            pass
+
+        def action_filter_info(self):
+            self.mention_level = 'info'
+            self._refresh()
+            pass
+
+        def action_filter_warning(self):
+            self.mention_level = 'warning'
+            self._refresh()
+            pass
+
+        def action_filter_error(self):
+            self.mention_level = 'error'
+            self._refresh()
+            pass
+
+        def action_toggle_mention(self):
+            self.mention_only = not self.mention_only
+            self._refresh()
+
+        def _refresh(self):
+            # 重做数据
+            self.process_data()
+            # 完全重新构建界面
+            self.refresh(recompose=True)
+            self.call_after_refresh(self._restore_focus)
+
         def process_data(self):
-            for exp in self.experiments.experiments:
+            self.selected_experiments = {}
+            level = self.mention_level
+            for i, exp in enumerate(self.experiments.experiments):
+                if exp['has_mention']:
+                    key = f'{i+1:03d} \[mention] ' + exp["script"]
+                else:
+                    key = f'{i+1:03d} ' + exp["script"]
+
                 for opt in exp["formatted_options"]:
-                    if opt.get("type") == "mention":
-                        self.mention_experiments[exp["script"]] = exp
+                    if self.selected_experiments.get(key):
                         break
+                    # Only consider mention option
+                    if self.mention_only:
+                        if opt.get("type") == "mention" and level in opt.get('level'):
+                            self.selected_experiments[key] = exp
+                    else:
+                        self.selected_experiments[key] = exp
 
         def compose(self) -> ComposeResult:
             yield Header()
 
             with Container():
-                yield Static("选择实验:")
+                yield Static(f"选择实验: {self.mention_only=} | {self.mention_level=}")
 
                 yield ListView(
                     *[
@@ -199,7 +264,7 @@ if __name__ == '__main__':
                             Label(name),
                             name=name,  # 把实验名存这里
                         )
-                        for name in self.mention_experiments
+                        for name in self.selected_experiments
                     ],
                     id="experiment-list",
                 )
@@ -216,7 +281,7 @@ if __name__ == '__main__':
             if exp_name is None:
                 return
 
-            exp = self.mention_experiments[exp_name]
+            exp = self.selected_experiments[exp_name]
 
             lines = [
                 f"脚本: {exp['script']}",
