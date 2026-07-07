@@ -237,10 +237,9 @@ if __name__ == '__main__':
             self.selected_experiments = {}
             level = self.mention_level
             for i, exp in enumerate(self.experiments.experiments):
+                key = f'{i+1:03d} ' + exp["script"]
                 if exp['has_mention']:
-                    key = f'{i+1:03d} \[mention] ' + exp["script"]
-                else:
-                    key = f'{i+1:03d} ' + exp["script"]
+                    key = f'[yellow]{key}[/yellow]'
 
                 for opt in exp["formatted_options"]:
                     if self.selected_experiments.get(key):
@@ -289,8 +288,19 @@ if __name__ == '__main__':
             ]
 
             for opt in exp["formatted_options"]:
+                color = '#aaaaff'
+
+                if opt['type'] == 'mention' and opt['level'] == 'error':
+                    color = '#ff3030'
+
+                if opt['type'] == 'mention' and opt['level'] == 'info':
+                    color = '#00ff00'
+
+                if opt['type'] == 'mention' and opt['level'] == 'warning':
+                    color = '#ffff00'
+
                 for k, v in opt.items():
-                    lines.append(f"{k}: {v}")
+                    lines.append(f"[{color}]{k}: {v}[/{color}]")
                 lines.append("-" * 20)
 
             content.update("\n".join(lines))
