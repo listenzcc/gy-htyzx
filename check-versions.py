@@ -1,4 +1,7 @@
+import mne
 import rich
+import antio
+import sklearn
 import loguru
 import pandas
 import textual
@@ -14,7 +17,10 @@ import latex2mathml
 
 lst = ['# python==3.11.15']
 for e in [
+    mne,
     rich,
+    antio,
+    sklearn,
     textual,
     loguru,
     pandas,
