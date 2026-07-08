@@ -1,40 +1,78 @@
-import asyncio
+# ------------------------------------------------------------------------------
+import os
 import sys
+import asyncio
 import subprocess
-from nicegui import ui, events
+from loguru import logger
 from pathlib import Path
+from nicegui import ui, events
 from datetime import datetime
 
+# ------------------------------------------------------------------------------
 sys.path.append('..')  # noqa
 from constants import *
 from experiments import Experiments
 from auth.user_service import UserService
 
+# ------------------------------------------------------------------------------
 CONDA_ENV = 'gyhtyzx'
 
+# ------------------------------------------------------------------------------
+logger.add("log/experiment_{time:YYYY-MM-DD}.log",
+           encoding=ENCODING, rotation='1 day')
+
+# ------------------------------------------------------------------------------
 EXP = Experiments()
 
-# class EXP:
-#     a = dict(
-#         cn='单音节分辨',
-#         script='./experiments/script/单音节分辨.py',
-#         abstract='abstract')
 
-
-def run_experiment(dct, output_dir, input_options):
+# ------------------------------------------------------------------------------
+def run_experiment(dct, output_dir: Path, input_options: dict):
     kwargs = {e: v.value for e, v in input_options.items()}
-    commands = ['conda', 'run', '-n', CONDA_ENV,
-                'python', dct['script'],
-                '--path', output_dir.as_posix()]
+    src = Path(dct['script']).absolute()
+    dst = output_dir.absolute()
+    commands = [
+        # 'conda', 'run', '-n', CONDA_ENV,
+        'python', src.as_posix(),
+        '--path', dst.as_posix()]
+
     for e, v in kwargs.items():
         if v:
-            commands.extend([f'--{e}', v])
-    print(commands)
-    return
-    subprocess.run(['conda', 'run', '-n', CONDA_ENV, 'python',
-                   dct['script'], '--path', output_dir.as_posix()])
-    # import time
-    # time.sleep(1)  # Simulate work
+            commands.extend([f'--{e}', str(v)])
+
+    if output_dir.is_dir():
+        logger.warning(f'Dir exists: {output_dir}')
+    else:
+        output_dir.mkdir(exist_ok=True, parents=True)
+
+    # Record commands
+    print(commands, file=open(output_dir /
+          'experiment.commands', 'w', encoding=ENCODING))
+    logger.debug(f'Using {commands=}')
+
+    # Actually running the experiment
+    _stdout = open(output_dir / 'experiment.stdout', 'w', encoding=ENCODING)
+    _stderr = open(output_dir / 'experiment.stderr', 'w', encoding=ENCODING)
+    try:
+        completed = subprocess.run(
+            commands, cwd=src.parent, stdout=_stdout, stderr=_stderr,
+            encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        )
+        print(completed, file=open(output_dir /
+              'experiment.finish', 'w', encoding=ENCODING))
+        logger.info(f'Experiment finished: {commands=}')
+
+        # ! Simulation for data acquirement
+        import shutil
+        shutil.copy('./eeg-workshop/example.cnt', dst / 'experiment.cnt')
+
+    except Exception as err:
+        logger.error(f'Experiment failed: {err=}')
+        with open(output_dir / 'experiment.error', 'w', encoding=ENCODING) as file:
+            file.write(f'{err=}\r\n')
+            import traceback
+            file.write(traceback.format_exc())
+
     return
 
 

@@ -1,5 +1,8 @@
 from datetime import datetime
 
+# Encoding
+ENCODING = 'utf-8'
+
 # key: tailwind classes
 ROLES = {
     'ADMIN': 'bg-red-100 text-red-800',

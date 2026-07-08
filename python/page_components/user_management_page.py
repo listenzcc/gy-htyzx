@@ -1,15 +1,22 @@
+import os
 import sys
+import subprocess
 import pandas as pd
 
+from loguru import logger
 from nicegui import ui
 from pathlib import Path
 from datetime import datetime
 
-from .inputs import date_input
+from .inputs import date_input, image_select
 
 sys.path.append('..')  # noqa
 from constants import *
 from auth.user_service import UserService
+
+# ------------------------------------------------------------------------------
+logger.add("log/preprocessing_{time:YYYY-MM-DD}.log",
+           encoding=ENCODING, rotation='1 day')
 
 password_validation = {
     '密码过短': lambda value: len(value) > 5,
@@ -331,6 +338,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     <q-td :props="props"><span v-html="props.value"></span></q-td>
                 ''')
 
+    # Select Experiment Data
     with ui.row().classes('w-full gap-0'):
         # detail edit table
         with ui.card().classes(STYLES.column3Card) as detail_card:
@@ -491,7 +499,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                 return
 
-        # Data
+        # Experiment Data
         with ui.card().classes(STYLES.column3_2Card) as data_card:
             # 标题栏（增加全屏按钮）
             with ui.row().classes('w-full justify-between items-center'):
@@ -538,6 +546,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     records = []
                     for experiment_folder in [e for e in data_folder.iterdir() if e.is_dir()]:
                         for time_folder in [e for e in experiment_folder.iterdir() if e.is_dir()]:
+                            if not (time_folder / 'experiment.finish').exists():
+                                continue
                             file = [e for e in time_folder.glob('*.csv')][0]
                             dt = datetime.strptime(
                                 time_folder.name, FILE_DATE_FMT)
@@ -568,11 +578,25 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                             selected_row = e.args[1]
                             row = records.iloc[selected_row['id']]
                             df = pd.read_csv(row['file'])
+
+                            experiment_name = row['experiment']
+                            experiment_datetime = row['datetime'].isoformat()
+                            eeg_data_folder = row['file'].parent
+
+                            # --------------------------------------------------
                             record_card.clear()
                             with record_card:
-                                ui.label(f'Record Preview: {row["experiment"]} | {row["datetime"].isoformat()}').classes(
+                                ui.label(f'Record Preview: {experiment_name} | {experiment_datetime}').classes(
                                     STYLES.cardTitleLabel)
-                                ui.table.from_pandas(df).classes('w-full')
+                                ui.table.from_pandas(df).classes(
+                                    'w-full max-h-[28em]')
+
+                            # --------------------------------------------------
+                            eeg_card.clear()
+                            with eeg_card:
+                                fill_eeg_card(
+                                    experiment_name, experiment_datetime, eeg_data_folder)
+
                             return
 
                         table.on('row-click', select_row)
@@ -584,5 +608,153 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                             STYLES.cardTitleLabel)
 
                 return
+
+    # EEG Data
+    with ui.row().classes('w-full gap-0'):
+        with ui.card().classes(STYLES.fullCard):
+            with ui.row().classes('w-full justify-between items-center'):
+                ui.label('EEG Data').classes(STYLES.cardTitleLabel)
+                with ui.card().classes('w-full') as eeg_card:
+                    pass
+
+    return
+
+
+def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folder: Path):
+    '''
+    Fill and render the EEG processing card
+    '''
+
+    ui.label(f'Record Preview: {experiment_name} | {experiment_datetime}').classes(
+        STYLES.cardTitleLabel)
+
+    # ----------------------------------------------
+    with ui.expansion(f'数据所在目录: {eeg_data_folder.as_posix()}').classes('w-full'):
+        files = sorted([e.relative_to(eeg_data_folder)
+                        for e in eeg_data_folder.rglob('*')])
+        df_files = pd.DataFrame(
+            files, columns=['文件'])
+        ui.table.from_pandas(df_files).classes(
+            'w-full max-h-[28em]')
+    ui.separator()
+
+    # ----------------------------------------------
+    script_folder = Path('./preprocessing/script')
+    script_files = sorted(script_folder.rglob(f'{experiment_name}_*.py'))
+    methods = {
+        e.name.split('_')[-1][:-3]: e for e in script_files
+    }
+
+    with ui.expansion('数据预处理', value=True).classes('w-full'):
+        if 'preprocessing' in methods:
+            with ui.card().classes('w-full'):
+                script = methods['preprocessing']
+                options = ['c 滤波', 'd 波形图呈现', 'e 脑地形图呈现',
+                           'f 坏道检测与插值', 'g ICA去噪', 'h 分段提取和噪音试次检测剔除']
+
+                with ui.row().classes('w-full'):
+                    ui.label('1. 预处理')
+                    ui.space()
+                    ui.label(f'脚本：{script.as_posix()}')
+
+                with ui.row().classes('w-full'):
+                    selected_preprocessing = [e for e in options]  # 存储选中的值
+
+                    cwd = eeg_data_folder.as_posix()
+                    preprocessing_options = ['--cnt', 'experiment.cnt',
+                                             '--out', 'preprocessing']
+                    preprocessing_options_2 = []
+
+                    # 创建多个 checkbox
+                    checkboxes = []
+                    for opt in options:
+                        cb = ui.checkbox(opt, value=True)  # 标准方框
+                        checkboxes.append(cb)
+
+                        # 监听变化，更新选中列表
+                        def update_selection(cb=cb, opt=opt):
+                            if cb.value:
+                                if opt not in selected_preprocessing:
+                                    selected_preprocessing.append(opt)
+                            else:
+                                if opt in selected_preprocessing:
+                                    selected_preprocessing.remove(opt)
+
+                            while preprocessing_options_2:
+                                preprocessing_options_2.pop()
+                            args = [
+                                f'--no-{e[0]}' for e in options if e not in selected_preprocessing]
+                            [preprocessing_options_2.append(e) for e in args]
+                            preprocessing_commands_label.text = ' '.join(
+                                preprocessing_options + preprocessing_options_2)
+
+                        cb.on_value_change(update_selection)
+
+                ui.button('开始预处理',
+                          on_click=lambda evt,
+                          options1=preprocessing_options,
+                          options2=preprocessing_options_2: preprocessing(
+                              evt, eeg_data_folder, options1, options2, script=script, on_finish=render_preprocessing_results))
+                ui.label(f'{cwd=}')
+                preprocessing_commands_label = ui.label(
+                    ' '.join(preprocessing_options + preprocessing_options_2)).classes('w-full')
+        else:
+            ui.label('没有找到预处理脚本').classes(STYLES.errorText)
+
+        # ----------------------------------------------------------------------
+        # Results of preprocessing
+        preprocessing_results_card = ui.card().classes('w-full')
+
+        def render_preprocessing_results():
+            preprocessing_folder = eeg_data_folder / 'preprocessing'
+            preprocessing_results_card.clear()
+            with preprocessing_results_card:
+                if (preprocessing_folder.with_name('preprocessing.finish')).exists():
+                    ui.label('1.1 预处理结果')
+                    ui.textarea(
+                        label='preprocessing.stdout',
+                        value=open(preprocessing_folder.with_name('preprocessing.stdout'), encoding=ENCODING).read()).classes('w-full')
+                    _image_files = sorted(preprocessing_folder.rglob('*.png'))
+                    image_files = {e.absolute(): e.relative_to(
+                        preprocessing_folder).as_posix() for e in _image_files}
+                    image_select(image_files)
+
+                else:
+                    ui.label('没有找到预处理结果').classes(STYLES.errorText)
+                    ui.button('点击此处刷新结果', on_click=render_preprocessing_results)
+
+        render_preprocessing_results()
+
+    return
+
+
+def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish):
+    print(event, cwd, options1, options2)
+    commands = [
+        'python', script.absolute().as_posix(),
+    ] + options1 + options2
+
+    (cwd / 'preprocessing').mkdir(exist_ok=True, parents=True)
+
+    # Actually running the experiment
+    _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
+    _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
+    try:
+        completed = subprocess.run(
+            commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        )
+        print(completed, file=open(cwd /
+              'preprocessing.finish', 'w', encoding=ENCODING))
+        logger.info(f'Preprocessing finished: {commands=}')
+
+    except Exception as err:
+        logger.error(f'Preprocessing failed: {err=}')
+        with open(cwd / 'preprocessing.error', 'w', encoding=ENCODING) as file:
+            file.write(f'{err=}\r\n')
+            import traceback
+            file.write(traceback.format_exc())
+
+    on_finish()
 
     return

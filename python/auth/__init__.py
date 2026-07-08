@@ -1,3 +1,8 @@
+import sys
 from loguru import logger
 
-logger.add('log/auth.log', rotation='5 MB')
+sys.path.append('..')  # noqa
+from constants import *
+
+logger.add("log/auth_{time:YYYY-MM-DD}.log",
+           encoding=ENCODING, rotation='1 day')

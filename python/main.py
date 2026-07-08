@@ -18,34 +18,38 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
-from loguru import logger
-from session.user_session_manager import UserSessionManager
-from auth.auth_manager import PermissionManager
-from auth.user_service import UserService
-from auth.decorators import AuthContext
-from auth.database import DatabaseManager
 from auth.models import RoleEnum
-from omegaconf import OmegaConf
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
+from auth.database import DatabaseManager
+from auth.decorators import AuthContext
+from auth.user_service import UserService
+from auth.auth_manager import PermissionManager
+from session.user_session_manager import UserSessionManager
+
+from loguru import logger
+from typing import Optional
 from fastapi import Request
 from nicegui import app, ui
-from page_components.layout import with_layout
 from datetime import datetime
-from typing import Optional
-import contextlib
-from page_components.profile_page import profile_content_readonly
-from page_components.debug_block import debug_block
-from page_components.user_management_page import user_management_users
-from page_components.login_page import login_login_card, login_signup_card
-from page_components.headers import reuseable_header
-from page_components.experiments_page import experiments_gallery
-from constants import *
+from omegaconf import OmegaConf
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
 import sys
+import contextlib
+
+from constants import *
+from page_components.layout import with_layout
+from page_components.headers import reuseable_header
+from page_components.login_page import login_login_card, login_signup_card
+from page_components.debug_block import debug_block
+from page_components.profile_page import profile_content_readonly
+from page_components.experiments_page import experiments_gallery
+from page_components.user_management_page import user_management_users
 
 
 # %%
-logger.add('log/main.log', rotation='5MB')
+logger.add("log/main_{time:YYYY-MM-DD}.log",
+           encoding=ENCODING, rotation='1 day')
 
 
 # %%
