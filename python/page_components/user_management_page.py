@@ -68,70 +68,79 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
     rows = []
     user_map = {}
 
-    # user is dict
-    for user in users:
-        user_map[user['id']] = user
+    def reload_rows_and_user_map():
+        rows.clear()
+        user_map.clear()
 
-        is_active = (
-            '<span class="text-green-600">🟢 Active</span>'
-            if user.get('is_active')
-            else '<span class="text-red-600">🔴 Inactive</span>'
-        )
+        users = sorted([e.to_dict()
+                        for e in user_service.list_users()], key=lambda e: e['id'])
 
-        created = user.get('created_at')
-        if isinstance(created, datetime):
-            created = created.strftime('%Y-%m-%d %H:%M')
-        elif isinstance(created, str):
-            try:
-                created = datetime.fromisoformat(created.replace(
-                    'Z', '+00:00')).strftime('%Y-%m-%d %H:%M')
-            except Exception:
-                pass
+        # user is dict
+        for user in users:
+            user_map[user['id']] = user
 
-        role_class = ROLES.get(
-            user.get('role'),
-            STYLES.plainText
-        )
+            is_active = (
+                '<span class="text-green-600">🟢 Active</span>'
+                if user.get('is_active')
+                else '<span class="text-red-600">🔴 Inactive</span>'
+            )
 
-        role = (
-            f'<span class="px-2 py-1 rounded {role_class}">'
-            f'{user.get("role", "—")}'
-            f'</span>'
-        )
+            created = user.get('created_at')
+            if isinstance(created, datetime):
+                created = created.strftime('%Y-%m-%d %H:%M')
+            elif isinstance(created, str):
+                try:
+                    created = datetime.fromisoformat(created.replace(
+                        'Z', '+00:00')).strftime('%Y-%m-%d %H:%M')
+                except Exception:
+                    pass
 
-        gender_class = GENDERS.get(
-            user.get('gender'),
-            STYLES.plainText
-        )
+            role_class = ROLES.get(
+                user.get('role'),
+                STYLES.plainText
+            )
 
-        gender = (
-            f'<span class="px-2 py-1 rounded {gender_class}">'
-            f'{user.get("gender", "—")}'
-            f'</span>'
-        )
+            role = (
+                f'<span class="px-2 py-1 rounded {role_class}">'
+                f'{user.get("role", "—")}'
+                f'</span>'
+            )
 
-        education_class = EDUCATIONS.get(
-            user.get('education'),
-            STYLES.plainText
-        )
+            gender_class = GENDERS.get(
+                user.get('gender'),
+                STYLES.plainText
+            )
 
-        education = (
-            f'<span class="px-2 py-1 rounded {education_class}">'
-            f'{user.get("education", "—")}'
-            f'</span>'
-        )
+            gender = (
+                f'<span class="px-2 py-1 rounded {gender_class}">'
+                f'{user.get("gender", "—")}'
+                f'</span>'
+            )
 
-        rows.append({
-            'id': user['id'],
-            'username': user['username'],
-            'role': role,
-            'is_active': is_active,
-            'created_at': created or '—',
-            'training_date': user['training_date'],
-            'birth_date': user['birth_date'],
-            'education': education,
-            'gender': gender
-        })
+            education_class = EDUCATIONS.get(
+                user.get('education'),
+                STYLES.plainText
+            )
+
+            education = (
+                f'<span class="px-2 py-1 rounded {education_class}">'
+                f'{user.get("education", "—")}'
+                f'</span>'
+            )
+
+            rows.append({
+                'id': user['id'],
+                'username': user['username'],
+                'role': role,
+                'is_active': is_active,
+                'created_at': created or '—',
+                'training_date': user['training_date'],
+                'birth_date': user['birth_date'],
+                'education': education,
+                'gender': gender
+            })
+
+    reload_rows_and_user_map()
 
     # --- UI layout: table + detail panel ---
 
@@ -295,6 +304,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
     def apply_filters():
         """Apply filters and update the table"""
+        reload_rows_and_user_map()
         filtered_rows = filter_users(rows)
         table.rows = filtered_rows
         table.update()
@@ -311,12 +321,22 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         filters['training_date_from'].value = None
         filters['training_date_to'].value = None
 
+        reload_rows_and_user_map()
         table.rows = rows
         table.update()
 
     # List users table
     with ui.card().classes(STYLES.fullCard):
-        ui.label('User List').classes(STYLES.cardTitleLabel)
+        def _on_click():
+            reload_rows_and_user_map()
+            table.rows = rows
+            table.update()
+
+        with ui.row().classes('w-full'):
+            ui.label('User List').classes(STYLES.cardTitleLabel)
+            ui.space()
+            ui.button('刷新用户列表', on_click=_on_click)
+
         with ui.table(
             rows=rows,
             columns=columns,
@@ -338,7 +358,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     <q-td :props="props"><span v-html="props.value"></span></q-td>
                 ''')
 
-    # Select Experiment Data
+    # Change User Profile
     with ui.row().classes('w-full gap-0'):
         # detail edit table
         with ui.card().classes(STYLES.column3Card) as detail_card:
@@ -481,16 +501,14 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                                 'is_active', 'birth_date', 'training_date']
                         updated.update({k: inputs[k].value for k in keys})
 
-                        trow = table.rows[[r['id']
-                                           for r in table.rows].index(u['id'])]
-                        for key in keys:
-                            trow[key] = updated[key]
-                        table.update()
-
                         if on_edit_apply:
                             on_edit_apply(updated)
                         else:
                             print(f'APPLY, {updated=}')
+
+                        reload_rows_and_user_map()
+                        table.rows = rows
+                        table.update()
 
                         ui.notify('Changes are applied')
                         return
@@ -548,9 +566,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         for time_folder in [e for e in experiment_folder.iterdir() if e.is_dir()]:
                             if not (time_folder / 'experiment.finish').exists():
                                 continue
-                            file = [e for e in time_folder.glob('*.csv')][0]
+                            file = next(time_folder.glob('*.csv'))
                             dt = datetime.strptime(
-                                time_folder.name, FILE_DATE_FMT)
+                                time_folder.name[:4+4+1+6], FILE_DATE_FMT)
                             records.append((experiment_folder.name, dt, file))
                     records = pd.DataFrame(
                         records, columns=['experiment', 'datetime', 'file'])
