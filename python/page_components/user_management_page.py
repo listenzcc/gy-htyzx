@@ -12,7 +12,7 @@ from .inputs import date_input, image_select
 
 sys.path.append('..')  # noqa
 from constants import *
-from auth.user_service import UserService
+from auth.user_service import UserService, User, or_
 
 # ------------------------------------------------------------------------------
 logger.add("log/preprocessing_{time:YYYY-MM-DD}.log",
@@ -158,49 +158,54 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             filters['role_input'] = ui.select(
                 options=['All'] + list(ROLES),
                 label='Role',
-                value='All'
+                value='All',
+                on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Gender filter
             filters['gender_input'] = ui.select(
                 options=['All'] + list(GENDERS),
                 label='Gender',
-                value='All'
+                value='All',
+                on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Education filter
             filters['education_input'] = ui.select(
                 options=['All'] + list(EDUCATIONS),
                 label='Education',
-                value='All'
+                value='All',
+                on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Status filter
             filters['status_input'] = ui.select(
                 options=['All', 'Active', 'Inactive'],
                 label='Status',
-                value='All'
+                value='All',
+                on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
         with ui.row().classes(row_styles):
             # with ui.column().classes('gap-2'):
             filters['birth_date_from'] = date_input(
-                'Birth date from', None).classes('w-1/5')
+                'Birth date from', None).classes('w-1/5').on_value_change(lambda: apply_filters())
             filters['birth_date_to'] = date_input(
-                'Birth date to', None).classes('w-1/5')
+                'Birth date to', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
             # with ui.column().classes('gap-2'):
             filters['training_date_from'] = date_input(
-                'Training date from', None).classes('w-1/5')
+                'Training date from', None).classes('w-1/5').on_value_change(lambda: apply_filters())
             filters['training_date_to'] = date_input(
-                'Training date to', None).classes('w-1/5')
+                'Training date to', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
         # Action buttons
         with ui.row().classes(row_styles):
             # Username filter
             filters['username_input'] = ui.input(
                 'Username',
-                placeholder='Search by username...'
+                placeholder='Search by username...',
+                on_change=lambda: apply_filters()
             ).props('clearable').classes('w-1/5')
 
             ui.button('Apply Filters', on_click=lambda: apply_filters()).props(
@@ -327,15 +332,51 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
     # List users table
     with ui.card().classes(STYLES.fullCard):
-        def _on_click():
-            reload_rows_and_user_map()
-            table.rows = rows
-            table.update()
 
         with ui.row().classes('w-full'):
+            def _on_click_refresh_user_list():
+                reload_rows_and_user_map()
+                table.rows = rows
+                table.update()
+
+            def _on_click_export_users():
+                print('export_users')
+                if not user_service.get_user_by_id(id).has_permission('export_users'):
+                    ui.notify('您目前没有 export_users 权限或账户不可用，不允许进行此操作',
+                              **NOTIFY_KWARGS.negative)
+                rows = table.rows
+                selected_ids = [e['id'] for e in rows]
+                db_users = user_service.session.query(
+                    User).filter(User.id.in_(selected_ids)).all()
+
+                print(selected_ids)
+                print(db_users)
+                columns = [c.name for c in User.__table__.columns]
+                print(columns)
+                # Convert to pandas DataFrame
+                df = pd.DataFrame([user.__dict__ for user in db_users])
+
+                # Remove SQLAlchemy internal '_sa_instance_state' column if present
+                df = df.drop(columns=['_sa_instance_state'], errors='ignore')
+
+                # Save to CSV
+                filename = 'users_export.csv'
+                df.to_csv(filename, index=False, encoding='utf-8')
+
+                content = f'Export users db into {filename}'
+                ui.notify(content, **NOTIFY_KWARGS.positive)
+                logger.info(content)
+
+                return df
+
             ui.label('User List').classes(STYLES.cardTitleLabel)
             ui.space()
-            ui.button('刷新用户列表', on_click=_on_click)
+            ui.button('刷新用户列表', on_click=_on_click_refresh_user_list)
+
+            # 当拥有 export_users 权限时，添加导出用户信息按钮
+            if user_service.get_user_by_id(id).has_permission('export_users'):
+                ui.button('导出用户信息', on_click=_on_click_export_users)
+                pass
 
         with ui.table(
             rows=rows,
@@ -385,7 +426,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                     # Not allow edit if not has permission and not the user itself
                     if not any([allow_edit_users, is_self]):
-                        ui.label('您既不是管理员也不是本人，因此无权查看和编辑此用户。').classes(
+                        ui.label('您既没有 edit_users 权限也不是本人，因此无权查看和编辑此用户。').classes(
                             STYLES.errorText)
                         return
 

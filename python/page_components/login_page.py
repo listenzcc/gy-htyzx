@@ -28,6 +28,12 @@ def login_login_card(
 
     def try_login():
         user = user_service.authenticate_user(username.value, password.value)
+
+        # 记录最新登陆时间并按最新的设置更新权限
+        user.last_login = datetime.now()
+        user_service.permission_manager.assign_role_permissions(user)
+        user_service.session.commit()
+
         if user is not None:
             session_id = session_manager.add_session(app.storage.user)
             app.storage.user.update(user.to_dict())
