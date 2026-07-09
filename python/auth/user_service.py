@@ -57,7 +57,10 @@ class UserService:
         ).first()
 
         if user and user.check_password(password) and user.is_active:
+            user.last_login = datetime.now()
+            self.session.commit()
             return user
+
         return None
 
     def update_user_role(self, user_id: int, new_role: str) -> bool:

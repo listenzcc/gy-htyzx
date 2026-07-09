@@ -33,7 +33,7 @@ def login_login_card(
             app.storage.user.update(user.to_dict())
             app.storage.user.update({
                 'authenticated': True,
-                'last_login': datetime.now().isoformat(),
+                'last_login': user.last_login.isoformat(),
                 'session_id': session_id,
             })
             # go back to where the user wanted to go
