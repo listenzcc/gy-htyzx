@@ -296,6 +296,24 @@ def data_migration_import(id: int, user_service: UserService):
 
                 def _importing_users():
                     print(new_user_rows)
+                    for row in new_user_rows:
+                        kwargs = dict(
+                            uuid=row['uuid'],
+                            username=row['username'],
+                            password=row['password_hash'],
+                            do_not_generate_hash=True,
+                            role=row['role'],
+                            gender=row['gender'],
+                            education=row['education'],
+                            is_active=row['is_active'],
+                            birth_date=datetime.strptime(
+                                row['birth_date'], DATE_FMT) if row['birth_date'] else None,
+                            training_date=datetime.strptime(
+                                row['training_date'], DATE_FMT) if row['training_date'] else None,
+                        )
+                        user = user_service.create_user(**kwargs)
+                        print(user)
+                        print(user.to_dict())
 
                 importing_btn.on_click(_importing_users)
 

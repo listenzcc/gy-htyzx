@@ -83,8 +83,18 @@ class User(Base):
     permissions = relationship(
         'Permission', secondary=user_permissions, back_populates='users')
 
-    def set_password(self, password):
-        """设置密码哈希"""
+    def set_password(self, password, do_not_generate_hash: bool = False):
+        """
+        设置密码哈希
+
+        Args:
+            password: str: the password
+            do_not_generate_hash=False: bool: the input password is hash, and do not generate. default by False
+        """
+
+        if do_not_generate_hash:
+            self.password_hash = password
+
         self.password_hash = generate_password_hash(password)
 
     @require_active(default_return=False)

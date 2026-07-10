@@ -54,7 +54,7 @@ if __name__ == '__main__':
     df = read_incoming(args.file)
     print(df)
 
-    # user_service.remove_user('cccc')
+    user_service.remove_user('cccc')
 
     for i, row in df.iterrows():
         username = row['username']

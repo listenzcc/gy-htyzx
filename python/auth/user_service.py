@@ -21,7 +21,7 @@ class UserService:
         self.permission_manager = PermissionManager(session)
 
     def create_user(self, username: str, password: str,
-                    role: str = RoleEnum.GUEST.value, **kwargs) -> Optional[User]:
+                    role: str = RoleEnum.GUEST.value, uuid: str = None, do_not_generate_hash: bool = False, **kwargs) -> Optional[User]:
         """创建新用户"""
         try:
             # 检查用户名和邮箱是否已存在
@@ -32,9 +32,13 @@ class UserService:
                 return None
 
             # 创建用户
+
+            # Use the input uuid or generate by uuid4()
+            uuid = str(uuid4()) if uuid is None else uuid
+
             user = User(username=username, role=role,
-                        uuid=str(uuid4()), **kwargs)
-            user.set_password(password)
+                        uuid=uuid, **kwargs)
+            user.set_password(password, do_not_generate_hash)
 
             self.session.add(user)
             self.session.commit()
