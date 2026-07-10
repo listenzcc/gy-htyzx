@@ -764,8 +764,9 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
             preprocessing_folder = eeg_data_folder / 'preprocessing'
             preprocessing_results_card.clear()
             with preprocessing_results_card:
-                if (preprocessing_folder.with_name('preprocessing.finish')).exists():
-                    ui.label('1.1 预处理结果')
+                ui.label('1.1 预处理结果')
+
+                if preprocessing_folder.with_name('preprocessing.finish').exists():
                     ui.textarea(
                         label='preprocessing.stdout',
                         value=open(preprocessing_folder.with_name('preprocessing.stdout'), encoding=ENCODING).read()).classes('w-full')
@@ -774,9 +775,16 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
                         preprocessing_folder).as_posix() for e in _image_files}
                     image_select(image_files)
 
+                elif preprocessing_folder.with_name('preprocessing.stderr').is_file():
+                    ui.textarea(
+                        label='preprocessing.stderr',
+                        value=open(preprocessing_folder.with_name('preprocessing.stderr'), encoding=ENCODING).read()).classes('w-full')
+                    ui.label('没有找到预处理结果').classes(STYLES.errorText)
+
                 else:
                     ui.label('没有找到预处理结果').classes(STYLES.errorText)
-                    ui.button('点击此处刷新结果', on_click=render_preprocessing_results)
+
+                ui.button('点击此处刷新结果', on_click=render_preprocessing_results)
 
         render_preprocessing_results()
 
@@ -791,6 +799,11 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
 
     (cwd / 'preprocessing').mkdir(exist_ok=True, parents=True)
 
+    # Delete existing files
+    _finish = cwd / 'preprocessing.finish'
+    if _finish.is_file():
+        _finish.unlink()
+
     # Actually running the experiment
     _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
     _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
@@ -800,8 +813,7 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
             env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
         )
         assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
-        print(completed, file=open(cwd /
-              'preprocessing.finish', 'w', encoding=ENCODING))
+        print(completed, file=open(_finish, 'w', encoding=ENCODING))
         logger.info(f'Preprocessing finished: {commands=}')
 
     except Exception as err:
@@ -810,6 +822,7 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
             file.write(f'{err=}\r\n')
             import traceback
             file.write(traceback.format_exc())
+        ui.notify(f'预处理过程中遇到错误：{err=}', **NOTIFY_KWARGS.negative)
 
     on_finish()
 

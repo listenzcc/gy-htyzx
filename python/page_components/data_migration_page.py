@@ -128,7 +128,6 @@ def data_migration_export(id: int, user_service: UserService):
 
 
 async def package_data(cp_method, event, src_folders: List[Path], output_dir: Path, progress_bar, label, elabel):
-
     btn = event.sender
 
     try:
@@ -137,8 +136,9 @@ async def package_data(cp_method, event, src_folders: List[Path], output_dir: Pa
 
         btn.disable()
 
-        progress_state = {'value': 0.0}
+        progress_state = {'value': 0.0, 'msg': '--'}
         progress_bar.bind_value(progress_state, 'value')
+        label.bind_text(progress_state, 'msg')
 
         if output_dir.is_dir():
             bak_output_dir = output_dir.with_name(
@@ -168,6 +168,7 @@ async def package_data(cp_method, event, src_folders: List[Path], output_dir: Pa
                         rel_path = file.relative_to(src)
                         dst_file = output_dir / src.name / rel_path
                         dst_file.parent.mkdir(parents=True, exist_ok=True)
+                        progress_state['msg'] = rel_path.as_posix()
                         shutil.copy2(file, dst_file)
 
                         copied_files += 1
@@ -177,6 +178,7 @@ async def package_data(cp_method, event, src_folders: List[Path], output_dir: Pa
                             await asyncio.sleep(0)
             else:
                 dst_file = output_dir / src.name
+                progress_state['msg'] = src.as_posix()
                 shutil.copy2(src, dst_file)
                 copied_files += 1
                 if total_files > 0:
@@ -249,6 +251,13 @@ def data_migration_import(id: int, user_service: UserService):
             ui.label('3.确认导入用户和数据')
             importing_btn = ui.button('确认导入用户和数据')
 
+            # progress_bar
+            copying_progress = ui.linear_progress()
+
+            # finish label
+            finish_label = ui.label().classes(STYLES.infoText)
+            error_label = ui.label().classes(STYLES.errorText)
+
         class Importing:
             def __init__(self):
                 import_data_dir.mkdir(exist_ok=True, parents=True)
@@ -256,35 +265,45 @@ def data_migration_import(id: int, user_service: UserService):
                 self._on_change_dir()
 
             def _on_change_dir(self):
+                global import_data_dir
                 import_data_dir = Path(import_data_dir_input.value)
 
                 contains.clear()
                 list_with_conflict.clear()
                 list_without_conflict.clear()
 
-                if not import_data_dir.is_dir():
-                    with contains:
-                        ui.item('目录不合法或不存在').classes(STYLES.errorText)
-                        return
-
-                if not (import_data_dir / 'users_export.csv').is_file():
-                    with contains:
-                        ui.item('目录不合法或不存在').classes(STYLES.errorText)
-                        return
-
                 with contains:
+                    importing_btn.disable()
+                    if not import_data_dir.is_dir():
+                        ui.item('目录不合法或不存在').classes(STYLES.errorText)
+                        return
+
+                    if not (import_data_dir / 'users_export.csv').is_file():
+                        ui.item('目录不合法或不存在').classes(STYLES.errorText)
+                        for p in sorted(import_data_dir.iterdir()):
+                            ui.item(p.name).classes(STYLES.errorText)
+                        return
+
+                    ui.item('目录合法').classes(STYLES.infoText)
                     subs = sorted(import_data_dir.iterdir())
                     for i, path in enumerate(subs):
                         ui.item(
                             f'{i+1}/{len(subs)} | {"File" if path.is_file() else "Folder"} | {path.relative_to(import_data_dir).as_posix()}').classes(STYLES.infoText)
 
+                    importing_btn.enable()
+
                 df = pd.read_csv(import_data_dir / 'users_export.csv')
 
+                # Separate the usernames for with- and without-conflict
                 new_user_rows = []
+
+                # Mapping {importing-uuid: local-uuid}
+                uuid_map = {}
                 for i, row in df.iterrows():
                     username = row['username']
                     user = user_service.get_user_by_username(username)
                     if user:
+                        uuid_map[row['uuid']] = user.uuid
                         with list_with_conflict:
                             ui.item(username)
                             ui.item(f'{user.to_dict()}')
@@ -294,8 +313,55 @@ def data_migration_import(id: int, user_service: UserService):
                             ui.item(username)
                             ui.item(f'{row.to_dict()}')
 
+                async def _copy_files():
+                    # If folder does not exist, do nothing and quit.
+                    output_dir = Path('./data')
+                    import_dir = import_data_dir / 'data_export'
+                    print(import_dir, import_dir.is_dir())
+                    if not import_dir.is_dir():
+                        return
+
+                    coping_status = {'text': '', 'num': 0}
+                    finish_label.bind_text(coping_status, 'text')
+                    copying_progress.bind_value(coping_status, 'value')
+
+                    # Copy files
+                    total = len(
+                        list([e for e in import_dir.rglob('*') if not e.is_dir()]))
+                    num = 0
+                    for uuid_folder in [e for e in import_dir.iterdir() if e.is_dir()]:
+                        # Translate it into local uuid
+                        uuid = uuid_map.get(uuid_folder.name, uuid_folder.name)
+
+                        for task_folder in [e for e in uuid_folder.iterdir() if e.is_dir()]:
+                            task = task_folder.name
+                            for date_folder in [e for e in task_folder.iterdir() if e.is_dir()]:
+                                date_str = date_folder.name
+                                src = date_folder
+                                dst = output_dir / uuid / task / date_str
+                                if dst.is_dir():
+                                    i = 0
+                                    while dst.is_dir():
+                                        i += 1
+                                        dst = output_dir / uuid / \
+                                            task / (date_str + f'.{i}')
+                                print(f'{src} -> {dst}')
+                                for _src in src.rglob('*'):
+                                    _dst = dst / _src.relative_to(src)
+                                    _dst.parent.mkdir(
+                                        exist_ok=True, parents=True)
+                                    if _src.is_dir():
+                                        continue
+                                    shutil.copy2(_src, _dst)
+                                    num += 1
+                                    coping_status['text'] = _src.as_posix()
+                                    coping_status['value'] = num / total
+                                    await asyncio.sleep(0)
+                    coping_status['text'] = f'导入完成（文件数量{total}）'
+                    coping_status['value'] = 1
+
                 def _importing_users():
-                    print(new_user_rows)
+                    '''Import users'''
                     for row in new_user_rows:
                         kwargs = dict(
                             uuid=row['uuid'],
@@ -312,10 +378,13 @@ def data_migration_import(id: int, user_service: UserService):
                                 row['training_date'], DATE_FMT) if row['training_date'] else None,
                         )
                         user = user_service.create_user(**kwargs)
-                        print(user)
-                        print(user.to_dict())
+                        logger.info(f'Imported {user.to_dict()}')
 
-                importing_btn.on_click(_importing_users)
+                async def _importing_btn_on_click():
+                    _importing_users()
+                    await _copy_files()
+
+                importing_btn.on_click(_importing_btn_on_click)
 
                 pass
 

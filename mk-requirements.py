@@ -15,6 +15,8 @@ import omegaconf
 import sqlalchemy
 import latex2mathml
 
+import importlib.metadata
+
 
 lst = ['# python==3.11.15']
 for e in [
@@ -35,8 +37,11 @@ for e in [
     sqlalchemy,
     latex2mathml
 ]:
+    if e.__name__ == 'sklearn':
+        lst.append(f'scikit-learn=={e.__version__}')
+        continue
     try:
-        lst.append(f'{e.__name__}=={e.__version__}')
+        lst.append(f'{e.__name__}=={importlib.metadata.version(e.__name__)}')
     except:
         lst.append(f'{e.__name__}')
 

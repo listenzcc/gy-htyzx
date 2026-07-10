@@ -1,9 +1,9 @@
 # python==3.11.15
 mne==1.12.1
 mne_connectivity==0.8.1
-rich
+rich==15.0.0
 antio==0.7.0
-sklearn==1.9.0
+scikit-learn==1.9.0
 textual==8.2.8
 loguru==0.7.2
 pandas==2.2.3
