@@ -360,7 +360,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 df = df.drop(columns=['_sa_instance_state'], errors='ignore')
 
                 # Save to CSV
-                filename = 'users_export.csv'
+                filename = Path('./exported/users_export.csv')
+                filename.parent.mkdir(exist_ok=True, parents=True)
                 df.to_csv(filename, index=False, encoding='utf-8')
 
                 content = f'Export users db into {filename}'

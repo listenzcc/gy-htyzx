@@ -213,7 +213,7 @@ class UserService:
             else:
                 # 按用户名或邮箱查找
                 user = self.session.query(User).filter(
-                    or_(User.username == identifier, User.email == identifier)
+                    or_(User.username == identifier)
                 ).first()
 
             if not user:
