@@ -3,6 +3,7 @@ from datetime import datetime
 # Encoding
 ENCODING = 'utf-8'
 
+# ------------------------------------------------------------------------------
 # key: tailwind classes
 ROLES = {
     'ADMIN': 'bg-red-100 text-red-800',
@@ -25,12 +26,14 @@ EDUCATIONS = {
 }
 
 
+# ------------------------------------------------------------------------------
 # Reuseable styles
 class STYLES:
     # Text
     plainText = 'text-gray-800'
     errorText = 'text-red-800'
     attentionText = 'text-red-600'
+    infoText = 'text-blue-800'
 
     # Input
     nonEditable = 'bg-gray-100'
@@ -47,9 +50,12 @@ class STYLES:
     pageSubTitle = 'text-gray-500 text-sm'
     pageBadgeText = 'text-sm italic'
 
+    # Pandas table
+    pandasTable = 'w-full max-h-[28em]'
+
+
+# ------------------------------------------------------------------------------
 # Notify kwargs
-
-
 class NOTIFY_KWARGS:
     # Negative
     negative = {'position': 'center', 'type': 'negative'}
@@ -58,14 +64,12 @@ class NOTIFY_KWARGS:
     positive = {'position': 'center', 'type': 'positive'}
 
 
-# Allowed chars for username & password
-ALLOWED_USERNAME = 'abcdefghijklmnopqrstuvwxyz1234567890._-@'
-ALLOWED_PASSWORD = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*-=_+()[]{}<>'
-
-# Format
+# ------------------------------------------------------------------------------
+# Date Format
 DATE_FMT = '%Y-%m-%d'
 FILE_DATE_FMT = '%Y%m%d_%H%M%S'
 
+# ------------------------------------------------------------------------------
 # How to generate a new user
 NEW_USER_DCT = {
     'birth_date': datetime(1936, 12, 12),
@@ -74,4 +78,22 @@ NEW_USER_DCT = {
     'gender': 'male',
     'education': 'bachelor',
     'is_active': True,
+}
+
+# ------------------------------------------------------------------------------
+# Rules for username and password
+
+# Allowed chars for username & password
+ALLOWED_USERNAME = 'abcdefghijklmnopqrstuvwxyz1234567890._-@'
+ALLOWED_PASSWORD = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*-=_+()[]{}<>'
+
+# Basic validation for username and password
+USERNAME_VALIDATION = {
+    '用户名过短': lambda value: len(value) > 3,
+    '用户名包含不支持的字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
+}
+
+PASSWORD_VALIDATION = {
+    '密码过短': lambda value: len(value) > 5,
+    '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
 }

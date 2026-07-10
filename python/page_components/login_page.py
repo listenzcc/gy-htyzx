@@ -8,16 +8,6 @@ from constants import *
 from auth.user_service import UserService
 from session.user_session_manager import UserSessionManager
 
-username_validation = {
-    '用户名过短': lambda value: len(value) > 3,
-    '用户名包含不支持的字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
-}
-
-password_validation = {
-    '密码过短': lambda value: len(value) > 5,
-    '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
-}
-
 
 def login_login_card(
         user_service: UserService,
@@ -51,7 +41,7 @@ def login_login_card(
 
     with ui.card().classes(STYLES.column3Card):  # .classes('absolute-center'):
         ui.label('Login').classes(STYLES.cardTitleLabel)
-        username = ui.input('Username', validation=username_validation).classes(
+        username = ui.input('Username', validation=USERNAME_VALIDATION).classes(
             'w-full').on('keydown.enter', try_login)
         password = ui.input('Password', password=True, password_toggle_button=True).classes('w-full').on(
             'keydown.enter', try_login)
@@ -80,20 +70,20 @@ def login_signup_card(user_server: UserService, on_success: None):
                 # Username
                 inputs['username'] = ui.input(
                     'Username', value=u.get('username', ''),
-                    validation=username_validation
+                    validation=USERNAME_VALIDATION
                 ).classes('w-full')
 
                 # Password
                 def _v():
                     return inputs['password'].value == inputs['confirmPassword'].value
                 confirm_password_validation = {
-                    k: v for k, v in password_validation.items()}
+                    k: v for k, v in PASSWORD_VALIDATION.items()}
                 confirm_password_validation.update({
                     '密码不一致': lambda _: _v()
                 })
 
                 inputs['password'] = ui.input(
-                    'Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                    'Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
                 inputs['confirmPassword'] = ui.input(
                     'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
 
@@ -161,7 +151,7 @@ def login_signup_card(user_server: UserService, on_success: None):
 
                     # Check if updated is validated
                     def _check_inputs():
-                        for k, foo in username_validation.items():
+                        for k, foo in USERNAME_VALIDATION.items():
                             if not foo(updated['username']):
                                 ui.notify(k, **NOTIFY_KWARGS.negative)
                                 return False

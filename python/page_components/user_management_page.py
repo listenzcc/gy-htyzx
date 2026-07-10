@@ -15,13 +15,8 @@ from constants import *
 from auth.user_service import UserService, User, or_
 
 # ------------------------------------------------------------------------------
-logger.add("log/preprocessing_{time:YYYY-MM-DD}.log",
+logger.add("log/user_managerment_{time:YYYY-MM-DD}.log",
            encoding=ENCODING, rotation='1 day')
-
-password_validation = {
-    '密码过短': lambda value: len(value) > 5,
-    '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
-}
 
 
 def user_management_users(id: int, user_service: UserService, on_edit_apply=None):
@@ -360,7 +355,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 df = df.drop(columns=['_sa_instance_state'], errors='ignore')
 
                 # Save to CSV
-                filename = Path('./exported/users_export.csv')
+                filename = Path('./export/users_export.csv')
                 filename.parent.mkdir(exist_ok=True, parents=True)
                 df.to_csv(filename, index=False, encoding='utf-8')
 
@@ -483,7 +478,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         def _v():
                             return inputs['new_password'].value == inputs['confirm_password'].value
                         confirm_password_validation = {
-                            k: v for k, v in password_validation.items()}
+                            k: v for k, v in PASSWORD_VALIDATION.items()}
                         confirm_password_validation.update({
                             '密码不一致': lambda _: _v()
                         })
@@ -494,9 +489,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                             ui.label('您正在修改他人的密码，请输入您的当前密码以验证身份。').classes(
                                 STYLES.attentionText)
                         inputs['password'] = ui.input(
-                            'Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                            'Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
                         inputs['new_password'] = ui.input(
-                            'New Password', password=True, password_toggle_button=True, validation=password_validation).classes('w-full')
+                            'New Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
                         inputs['confirm_password'] = ui.input(
                             'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
 
@@ -531,7 +526,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                                 return
 
                             # Check if the new password meets the validation criteria
-                            for k, v in password_validation.items():
+                            for k, v in PASSWORD_VALIDATION.items():
                                 if not v(password):
                                     ui.notify(
                                         f'试图修改密码，但不符合要求: {k}', **NOTIFY_KWARGS.negative)
@@ -649,7 +644,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                                 ui.label(f'Record Preview: {experiment_name} | {experiment_datetime}').classes(
                                     STYLES.cardTitleLabel)
                                 ui.table.from_pandas(df).classes(
-                                    'w-full max-h-[28em]')
+                                    STYLES.pandasTable)
 
                             # --------------------------------------------------
                             eeg_card.clear()

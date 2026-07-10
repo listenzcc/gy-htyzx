@@ -18,6 +18,7 @@ Functions:
 
 # %% ---- 2026-06-18 ------------------------
 # Requirements and constants
+from page_components.data_migration_page import data_migration_export, data_migration_import
 from auth.models import RoleEnum
 from auth.database import DatabaseManager
 from auth.decorators import AuthContext
@@ -224,7 +225,7 @@ async def experiments_page():
     # Not login
     if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
-            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+            ui.label('用户无权限').classes('text-red-500')
         logger.error('Requiring /experiments page but not authenticated.')
         return
 
@@ -232,6 +233,31 @@ async def experiments_page():
 
     experiments_gallery(user.id, user.uuid, user_service)
     return
+
+
+# ------------------------------------------------------------------------------
+
+@ui.page('/data_migration')
+@with_layout
+async def data_migration_page():
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
+
+    # Not login
+    if user is None or not user.has_permission('just_walk_by'):
+        with make_it_center():
+            ui.label('用户无权限').classes('text-red-500')
+        logger.error('Requiring /experiments page but not authenticated.')
+        return
+
+    reuseable_header('Data Migration', user.username)
+
+    data_migration_export(id, user_service)
+
+    data_migration_import(id, user_service)
+
+    return
+
 
 # ------------------------------------------------------------------------------
 
@@ -245,7 +271,7 @@ async def intro_page():
     # Not login
     if user is None or not user.has_permission('just_walk_by'):
         with make_it_center():
-            ui.label('用户未登陆，这通常不会发生。').classes('text-red-500')
+            ui.label('用户无权限').classes('text-red-500')
         logger.error('Requiring /intro page but not authenticated.')
         return
 
@@ -310,8 +336,8 @@ async def root():
                       on_click=lambda: ui.navigate.to('/experiments')).props('color=accent')
             ui.button('User Management', icon='book',
                       on_click=lambda: ui.navigate.to('/user_management')).props('color=green')
-            ui.button('Others', icon='sensors',
-                      on_click=lambda: ui.navigate.to('/others')).props('color=secondary')
+            ui.button('Data Migration', icon='sensors',
+                      on_click=lambda: ui.navigate.to('/data_migration')).props('color=secondary')
         else:
             ui.button('立即登录', icon='login',
                       on_click=lambda: ui.navigate.to('/login')).props('color=primary')
