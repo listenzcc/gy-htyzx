@@ -19,22 +19,23 @@ def login_login_card(
     def try_login():
         user = user_service.authenticate_user(username.value, password.value)
 
-        # 记录最新登陆时间并按最新的设置更新权限
-        user.last_login = datetime.now()
-        user_service.permission_manager.assign_role_permissions(user)
-        user_service.session.commit()
+        if user:
+            # 记录最新登陆时间并按最新的设置更新权限
+            user.last_login = datetime.now()
+            user_service.permission_manager.assign_role_permissions(user)
+            user_service.session.commit()
 
-        if user is not None:
-            session_id = session_manager.add_session(app.storage.user)
-            app.storage.user.update(user.to_dict())
-            app.storage.user.update({
-                'authenticated': True,
-                'last_login': user.last_login.isoformat(),
-                'session_id': session_id,
-            })
-            # go back to where the user wanted to go
-            ui.navigate.to(redirect_to)
-            return True
+            if user is not None:
+                session_id = session_manager.add_session(app.storage.user)
+                app.storage.user.update(user.to_dict())
+                app.storage.user.update({
+                    'authenticated': True,
+                    'last_login': user.last_login.isoformat(),
+                    'session_id': session_id,
+                })
+                # go back to where the user wanted to go
+                ui.navigate.to(redirect_to)
+                return True
 
         ui.notify('Wrong username or password', color='negative')
         return False
