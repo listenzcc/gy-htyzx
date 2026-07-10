@@ -58,6 +58,7 @@ def run_experiment(dct, output_dir: Path, input_options: dict):
             encoding=ENCODING,
             env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
         )
+        assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
         print(completed, file=open(output_dir /
               'experiment.finish', 'w', encoding=ENCODING))
         logger.info(f'Experiment finished: {commands=}')

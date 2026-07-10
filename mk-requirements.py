@@ -1,4 +1,5 @@
 import mne
+import mne_connectivity
 import rich
 import antio
 import sklearn
@@ -18,6 +19,7 @@ import latex2mathml
 lst = ['# python==3.11.15']
 for e in [
     mne,
+    mne_connectivity,
     rich,
     antio,
     sklearn,

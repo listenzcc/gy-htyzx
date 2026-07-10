@@ -804,6 +804,7 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
             commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
             env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
         )
+        assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
         print(completed, file=open(cwd /
               'preprocessing.finish', 'w', encoding=ENCODING))
         logger.info(f'Preprocessing finished: {commands=}')
