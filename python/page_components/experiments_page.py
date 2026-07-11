@@ -1,6 +1,7 @@
 # ------------------------------------------------------------------------------
 import os
 import sys
+import shutil
 import asyncio
 import subprocess
 from loguru import logger
@@ -13,9 +14,6 @@ sys.path.append('..')  # noqa
 from constants import *
 from experiments import Experiments
 from auth.user_service import UserService
-
-# ------------------------------------------------------------------------------
-CONDA_ENV = 'gyhtyzx'
 
 # ------------------------------------------------------------------------------
 logger.add("log/experiment_{time:YYYY-MM-DD}.log",
@@ -64,8 +62,10 @@ def run_experiment(dct, output_dir: Path, input_options: dict):
         logger.info(f'Experiment finished: {commands=}')
 
         # ! Simulation for data acquirement
-        import shutil
-        shutil.copy('./eeg-workshop/example.cnt', dst / 'experiment.cnt')
+        example_fname = Path(
+            f'./eeg-workshop/{src.name.split("_")[0]}-raw.cnt')
+        assert example_fname.is_file(), f'File error: {example_fname}'
+        shutil.copy(example_fname, dst / 'experiment-raw.cnt')
 
     except Exception as err:
         logger.error(f'Experiment failed: {err=}')

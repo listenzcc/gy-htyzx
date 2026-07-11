@@ -1,3 +1,4 @@
+import pandas as pd
 from nicegui import ui
 
 
@@ -41,3 +42,32 @@ def image_select(image_files: dict, label: str = 'Image'):
     #     img.update()  # 刷新显示
 
     # img = ui.image(path)
+
+
+def image_table_txt_select(files: dict, label: str = '多功能文件查看器'):
+    for path, name in files.items():
+        break
+
+    select = ui.select(options=files, label=label,
+                       value=path, on_change=lambda: _on_change())
+    img = ui.image().bind_source_from(select, 'value')
+    row = ui.row().classes('w-full')
+
+    def _on_change():
+        img.set_visibility(False)
+        row.clear()
+
+        if select.value.name.endswith('.csv'):
+            df = pd.read_csv(select.value)
+            with row:
+                ui.table.from_pandas(df).classes(
+                    'max-h-[28em] overflow-scroll')
+        elif select.value.name.endswith('.png'):
+            img.set_visibility(True)
+        else:
+            content = open(select.value, encoding='utf-8').read()
+            with row:
+                ui.textarea(label=select.value.as_posix(), value=content)
+
+    _on_change()
+    return

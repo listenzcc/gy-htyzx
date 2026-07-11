@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import subprocess
@@ -8,7 +9,7 @@ from nicegui import ui
 from pathlib import Path
 from datetime import datetime
 
-from .inputs import date_input, image_select
+from .inputs import date_input, image_select, image_table_txt_select
 
 sys.path.append('..')  # noqa
 from constants import *
@@ -691,7 +692,6 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
             files, columns=['文件'])
         ui.table.from_pandas(df_files).classes(
             'w-full max-h-[28em]')
-    ui.separator()
 
     # ----------------------------------------------
     script_folder = Path('./preprocessing/script')
@@ -700,6 +700,7 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
         e.name.split('_')[-1][:-3]: e for e in script_files
     }
 
+    ui.separator()
     with ui.expansion('数据预处理', value=True).classes('w-full'):
         if 'preprocessing' in methods:
             with ui.card().classes('w-full'):
@@ -716,7 +717,7 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
                     selected_preprocessing = [e for e in options]  # 存储选中的值
 
                     cwd = eeg_data_folder.as_posix()
-                    preprocessing_options = ['--cnt', 'experiment.cnt',
+                    preprocessing_options = ['--cnt', 'experiment-raw.cnt',
                                              '--out', 'preprocessing']
                     preprocessing_options_2 = []
 
@@ -764,7 +765,7 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
             preprocessing_folder = eeg_data_folder / 'preprocessing'
             preprocessing_results_card.clear()
             with preprocessing_results_card:
-                ui.label('1.1 预处理结果')
+                ui.label('预处理结果')
 
                 if preprocessing_folder.with_name('preprocessing.finish').exists():
                     ui.textarea(
@@ -788,6 +789,122 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
 
         render_preprocessing_results()
 
+    ui.separator()
+    with ui.expansion('特征分析', value=True).classes('w-full'):
+        processing_methods = [e for e in methods if e != 'preprocessing']
+
+        if len(processing_methods) == 0:
+            ui.label(f'2.没有找到特征分析脚本').classes(STYLES.errorText)
+            return
+
+        _clean_epo = eeg_data_folder / 'preprocessing' / 'clean_epo.fif'
+        _preprocessing_finish = eeg_data_folder / 'preprocessing.finish'
+
+        if not all([_clean_epo.is_file(), _preprocessing_finish.is_file()]):
+            ui.label(f'2.预处理未完成，请先完成预处理再进行特征分析').classes(STYLES.errorText)
+            return
+
+        ui.label(f'数据目录：{_clean_epo}')
+
+        with ui.row().classes('items-center'):
+            ui.label(f'请选择特征分析方法').classes(STYLES.infoText)
+            select_processing_method = ui.select(
+                processing_methods, value=processing_methods[0])
+
+        processing_card = ui.card().classes(STYLES.fullCard)
+
+        class Processing:
+            def __init__(self):
+                select_processing_method.on_value_change(
+                    self._on_select_processing_method)
+                self._on_select_processing_method()
+
+            def _on_select_processing_method(self):
+                processing_card.clear()
+                _selected_method = select_processing_method.value
+                _script = methods[_selected_method]
+                _processing_folder = eeg_data_folder / _selected_method
+                with processing_card:
+                    ui.label(f'特征分析：{_selected_method}').classes(
+                        STYLES.infoText)
+                    ui.label(f'特征分析脚本：{_script}').classes(STYLES.infoText)
+                    ui.label(f'特征分析目录：{_processing_folder}').classes(
+                        STYLES.infoText)
+
+                    result_card = ui.card().classes('w-full')
+
+                    def _on_finish():
+                        files = sorted(
+                            [e for e in _processing_folder.rglob('*') if e.is_file()])
+                        if len(files) == 0:
+                            return
+
+                        _files = {e.absolute(): e.relative_to(
+                            _processing_folder).as_posix() for e in files}
+                        result_card.clear()
+                        with result_card:
+                            ui.label('特征分析结果')
+                            # ui.select(img_files, value=img_files[0])
+                            image_table_txt_select(_files)
+
+                    _on_finish()
+
+                    commands = [
+                        'python', _script.absolute().as_posix(),
+                        '--epo', _clean_epo.absolute().as_posix(),
+                        '--out', '.'
+                    ]
+                    ui.button('开始特征分析', on_click=lambda e: feature_processing(
+                        e, _processing_folder, commands, _selected_method, _on_finish))
+
+        processing = Processing()
+
+        pass
+
+    return
+
+
+async def feature_processing(event, cwd: Path, commands: list, mname: str, on_finish):
+    '''
+    mname: method name.
+    '''
+
+    # print(event, cwd, commands, mname)
+    ui.notify(f'开始特征分析：{commands} in {cwd}', **NOTIFY_KWARGS.positive)
+    await asyncio.sleep(0.1)
+
+    cwd.mkdir(exist_ok=True, parents=True)
+
+    # Delete existing files
+    _finish = cwd / f'{mname}.finish'
+    if _finish.is_file():
+        _finish.unlink()
+
+    _error = cwd / f'{mname}.error'
+    if _error.is_file():
+        _error.unlink()
+
+    # Actually running the experiment
+    _stdout = open(cwd / f'{mname}.stdout', 'w', encoding=ENCODING)
+    _stderr = open(cwd / f'{mname}.stderr', 'w', encoding=ENCODING)
+    try:
+        completed = subprocess.run(
+            commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        )
+        assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
+        print(completed, file=open(_finish, 'w', encoding=ENCODING))
+        logger.info(f'{mname} finished: {commands=}')
+
+    except Exception as err:
+        logger.error(f'{mname} failed: {err=}')
+        with open(_error, 'w', encoding=ENCODING) as file:
+            file.write(f'{err=}\r\n')
+            import traceback
+            file.write(traceback.format_exc())
+        ui.notify(f'特征分析（{mname}）中遇到错误：{err=}', **NOTIFY_KWARGS.negative)
+
+    on_finish()
     return
 
 
@@ -804,6 +921,10 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
     if _finish.is_file():
         _finish.unlink()
 
+    _error = cwd / 'preprocessing.error'
+    if _error.is_file():
+        _error.unlink()
+
     # Actually running the experiment
     _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
     _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
@@ -818,7 +939,7 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
 
     except Exception as err:
         logger.error(f'Preprocessing failed: {err=}')
-        with open(cwd / 'preprocessing.error', 'w', encoding=ENCODING) as file:
+        with open(_error, 'w', encoding=ENCODING) as file:
             file.write(f'{err=}\r\n')
             import traceback
             file.write(traceback.format_exc())
