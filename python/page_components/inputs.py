@@ -49,9 +49,9 @@ def image_table_txt_select(files: dict, label: str = '多功能文件查看器')
         break
 
     select = ui.select(options=files, label=label,
-                       value=path, on_change=lambda: _on_change())
-    img = ui.image().bind_source_from(select, 'value')
-    row = ui.row().classes('w-full')
+                       value=path, on_change=lambda: _on_change()).classes('w-full')
+    img = ui.image().bind_source_from(select, 'value').classes('w-full')
+    row = ui.row().classes('w-full').classes('w-full')
 
     def _on_change():
         img.set_visibility(False)
@@ -61,13 +61,14 @@ def image_table_txt_select(files: dict, label: str = '多功能文件查看器')
             df = pd.read_csv(select.value)
             with row:
                 ui.table.from_pandas(df).classes(
-                    'max-h-[28em] overflow-scroll')
+                    'max-h-[28em] overflow-scroll w-full')
         elif select.value.name.endswith('.png'):
             img.set_visibility(True)
         else:
             content = open(select.value, encoding='utf-8').read()
             with row:
-                ui.textarea(label=select.value.as_posix(), value=content)
+                ui.textarea(label=select.value.as_posix(),
+                            value=content).classes('w-full')
 
     _on_change()
     return

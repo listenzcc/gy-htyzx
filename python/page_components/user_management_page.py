@@ -839,7 +839,7 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
                         if len(files) == 0:
                             return
 
-                        _files = {e.absolute(): e.relative_to(
+                        _files = {e: e.relative_to(
                             _processing_folder).as_posix() for e in files}
                         result_card.clear()
                         with result_card:
@@ -908,7 +908,7 @@ async def feature_processing(event, cwd: Path, commands: list, mname: str, on_fi
     return
 
 
-def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish):
+async def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish):
     print(event, cwd, options1, options2)
     commands = [
         'python', script.absolute().as_posix(),
@@ -929,15 +929,36 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
     _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
     _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
     try:
-        completed = subprocess.run(
-            commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
-            env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        # completed = subprocess.run(
+        #     commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
+        #     env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        # )
+        # assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
+        # print(completed, file=open(_finish, 'w', encoding=ENCODING))
+        ui.notify(f'预处理开始：{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+        # 在线程池中运行同步的 subprocess.run
+        result = await asyncio.to_thread(
+            subprocess.run,
+            commands,
+            cwd=cwd,
+            stdout=_stdout,
+            stderr=_stderr,
+            encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}
         )
-        assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
-        print(completed, file=open(_finish, 'w', encoding=ENCODING))
+
+        # 等待进程完成
+        assert result.returncode == 0, '执行完毕但 returncode 不为 0。'
+        print(result, file=open(_finish, 'w', encoding=ENCODING))
+
         logger.info(f'Preprocessing finished: {commands=}')
+        ui.notify(f'预处理完成：{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
 
     except Exception as err:
+        logger.exception(err)
         logger.error(f'Preprocessing failed: {err=}')
         with open(_error, 'w', encoding=ENCODING) as file:
             file.write(f'{err=}\r\n')
@@ -945,6 +966,8 @@ def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish)
             file.write(traceback.format_exc())
         ui.notify(f'预处理过程中遇到错误：{err=}', **NOTIFY_KWARGS.negative)
 
+    await asyncio.sleep(0.1)
     on_finish()
+    await asyncio.sleep(0.1)
 
     return
