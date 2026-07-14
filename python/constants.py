@@ -6,23 +6,23 @@ ENCODING = 'utf-8'
 # ------------------------------------------------------------------------------
 # key: tailwind classes
 ROLES = {
-    'ADMIN': 'bg-red-100 text-red-800',
-    'USER': 'bg-blue-100 text-blue-800',
-    'GUEST': 'bg-gray-100 text-gray-800'
+    '管理员': 'bg-red-100 text-red-800',
+    '普通用户': 'bg-blue-100 text-blue-800',
+    '游客': 'bg-gray-100 text-gray-800'
 }
 
 GENDERS = {
-    'male': 'text-blue-800',
-    'female': 'text-red-800'
+    '男': 'text-blue-800',
+    '女': 'text-red-800'
 }
 
 EDUCATIONS = {
-    'middle school': 'bg-yellow-100 text-yellow-800',      # 初中
-    'high school': 'bg-green-100 text-green-800',          # 高中
-    'associate degree': 'bg-purple-100 text-purple-800',   # 大专
-    'bachelor': 'bg-blue-100 text-blue-800',               # 本科
-    'master': 'bg-indigo-100 text-indigo-800',             # 硕士
-    'doctorate': 'bg-violet-100 text-violet-800'           # 博士
+    '初中毕业': 'bg-yellow-100 text-yellow-800',      # 初中
+    '高中毕业': 'bg-green-100 text-green-800',          # 高中
+    '大专毕业': 'bg-purple-100 text-purple-800',   # 大专
+    '本科毕业': 'bg-blue-100 text-blue-800',               # 本科
+    '硕士毕业': 'bg-indigo-100 text-indigo-800',             # 硕士
+    '博士毕业': 'bg-violet-100 text-violet-800'           # 博士
 }
 
 
@@ -74,9 +74,9 @@ FILE_DATE_FMT = '%Y%m%d_%H%M%S'
 NEW_USER_DCT = {
     'birth_date': datetime(1936, 12, 12),
     'training_date': datetime.now(),
-    'role': 'USER',
-    'gender': 'male',
-    'education': 'bachelor',
+    'role': '普通用户',
+    'gender': '男',
+    'education': '本科毕业',
     'is_active': True,
 }
 
@@ -90,7 +90,8 @@ ALLOWED_PASSWORD = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*-=_+()[]{}<>'
 # Basic validation for username and password
 USERNAME_VALIDATION = {
     '用户名过短': lambda value: len(value) > 3,
-    '用户名包含不支持的字符': lambda value: all([e in ALLOWED_USERNAME for e in value])
+    # all([e in ALLOWED_USERNAME for e in value])
+    '用户名包含不支持的字符': lambda value: True
 }
 
 PASSWORD_VALIDATION = {

@@ -59,9 +59,9 @@ class DatabaseManager:
                 user_service.create_user(
                     username="admin",
                     password="admin",
-                    role="ADMIN",
-                    gender="male",
-                    education='middle school',
+                    role="管理员",
+                    gender="男",
+                    education='小学肄业',
                     birth_date=datetime(1999, 11, 22),
                     training_date=datetime(2020, 11, 22)
                 )

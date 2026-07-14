@@ -49,14 +49,14 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
     columns = [
         dict(name='id', label='ID'),
-        dict(name='username', label='Username'),
-        dict(name='role', label='Role'),
-        dict(name='gender', label='Gender'),
-        dict(name='birth_date', label='BirthDate'),
-        dict(name='training_date', label='TrainingDate'),
-        dict(name='education', label='Education'),
-        dict(name='is_active', label='IsActive'),
-        dict(name='created_at', label='CreatedAt'),
+        dict(name='username', label='用户名'),
+        dict(name='role', label='角色'),
+        dict(name='gender', label='性别'),
+        dict(name='birth_date', label='出生日期'),
+        dict(name='training_date', label='参训日期'),
+        dict(name='education', label='学历'),
+        dict(name='is_active', label='激活状态'),
+        dict(name='created_at', label='账号创建时间'),
     ]
 
     [e.update({'field': e['name'], 'sortable': True}) for e in columns]
@@ -143,9 +143,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
     # Filter section
     # .classes('w-full mb-4 p-4 bg-gray-50'):
     # with ui.card().classes(STYLES.fullCard):
-    with ui.expansion('Click to Toggle Filter', icon='menu').classes('w-full'):
+    with ui.expansion('展开/关闭过滤器', icon='menu').classes('w-full'):
         # .classes('text-lg font-bold mb-2')
-        ui.label('Filters').classes(STYLES.cardTitleLabel)
+        # ui.label('Filters').classes(STYLES.cardTitleLabel)
 
         row_styles = 'w-full gap-4 justify-center items-center'
 
@@ -153,7 +153,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             # Role filter
             filters['role_input'] = ui.select(
                 options=['All'] + list(ROLES),
-                label='Role',
+                label='角色',
                 value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
@@ -161,7 +161,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             # Gender filter
             filters['gender_input'] = ui.select(
                 options=['All'] + list(GENDERS),
-                label='Gender',
+                label='性别',
                 value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
@@ -169,7 +169,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             # Education filter
             filters['education_input'] = ui.select(
                 options=['All'] + list(EDUCATIONS),
-                label='Education',
+                label='学历',
                 value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
@@ -177,7 +177,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             # Status filter
             filters['status_input'] = ui.select(
                 options=['All', 'Active', 'Inactive'],
-                label='Status',
+                label='激活状态',
                 value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
@@ -185,28 +185,28 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         with ui.row().classes(row_styles):
             # with ui.column().classes('gap-2'):
             filters['birth_date_from'] = date_input(
-                'Birth date from', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                '出生日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
             filters['birth_date_to'] = date_input(
-                'Birth date to', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                '出生日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
             # with ui.column().classes('gap-2'):
             filters['training_date_from'] = date_input(
-                'Training date from', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                '参训日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
             filters['training_date_to'] = date_input(
-                'Training date to', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                '参训日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
         # Action buttons
         with ui.row().classes(row_styles):
             # Username filter
             filters['username_input'] = ui.input(
-                'Username',
-                placeholder='Search by username...',
+                '用户名',
+                placeholder='用户名包含此字符串',
                 on_change=lambda: apply_filters()
             ).props('clearable').classes('w-1/5')
 
-            ui.button('Apply Filters', on_click=lambda: apply_filters()).props(
+            ui.button('应用过滤条件', on_click=lambda: apply_filters()).props(
                 'color=primary').classes('w-1/5')
-            ui.button('Clear Filters', on_click=lambda: clear_filters()).props(
+            ui.button('清除过滤条件', on_click=lambda: clear_filters()).props(
                 'color=secondary flat').classes('w-1/5')
 
     def filter_users(rows_data):
@@ -366,7 +366,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
                 return df
 
-            ui.label('User List').classes(STYLES.cardTitleLabel)
+            ui.label('用户列表').classes(STYLES.cardTitleLabel)
             ui.space()
             ui.button('刷新用户列表', on_click=_on_click_refresh_user_list)
 
@@ -397,10 +397,10 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 ''')
 
     # Change User Profile
-    with ui.row().classes('w-full gap-0'):
+    with ui.row().classes('w-full'):
         # detail edit table
-        with ui.card().classes(STYLES.column3Card) as detail_card:
-            ui.label('Select a user').classes(STYLES.cardTitleLabel)
+        with ui.card().classes(STYLES.fullCard) as detail_card:
+            ui.label('【尚未选择用户】').classes(STYLES.cardTitleLabel)
 
             inputs = {}
 
@@ -409,7 +409,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 detail_card.clear()
 
                 with detail_card:
-                    ui.label('User Detail').classes(STYLES.cardTitleLabel)
+                    ui.label('待修改的用户信息').classes(STYLES.cardTitleLabel)
                     # u is the dict from auth.models.User.to_dict
                     u = selected['user']
 
@@ -428,73 +428,76 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         return
 
                     # immutable fields (grey / disabled)
-                    with ui.row():
+                    with ui.row().classes('justify-evenly w-full'):
                         ui.input('ID', value=u.get('id')).props(
                             'disable').classes(STYLES.nonEditable)
+                        ui.input('用户名', value=u.get('username')).props(
+                            'disable').classes(STYLES.nonEditable)
+                        ui.input('UUID', value=u.get('uuid')).props(
+                            'disable').classes(STYLES.nonEditable + ' w-1/3')
                         inputs['is_active'] = ui.switch(
-                            'Active', value=u.get('is_active'))
-                    ui.input('Username', value=u.get('username')).props(
-                        'disable').classes(STYLES.nonEditable)
-                    ui.input('UUID', value=u.get('uuid')).props(
-                        'disable').classes(STYLES.nonEditable + ' w-full')
+                            '激活状态', value=u.get('is_active'))
 
                     # Role & gender
-                    with ui.row().classes('w-full'):
-                        inputs['role'] = ui.select(
-                            options=list(ROLES),
-                            label='Role',
-                            value=u.get('role')
-                        ).classes('w-1/3')
-                        inputs['gender'] = ui.select(
-                            options=list(GENDERS),
-                            label='Gender',
-                            value=u.get('gender')
-                        ).classes('w-1/3')
+                    with ui.row().classes('justify-evenly w-full'):
+                        with ui.column().classes('w-1/3'):
+                            inputs['role'] = ui.select(
+                                options=list(ROLES),
+                                label='角色',
+                                value=u.get('role')
+                            ).classes('w-full')
 
-                    # With date handling
-                    # Birth
-                    birth = u.get('birth_date')
-                    inputs['birth_date'] = date_input(
-                        'Birth Date', birth.strftime(DATE_FMT))
+                            inputs['gender'] = ui.select(
+                                options=list(GENDERS),
+                                label='性别',
+                                value=u.get('gender')
+                            ).classes('w-full')
 
-                    # Training
-                    training = u.get('training_date')
-                    inputs['training_date'] = date_input(
-                        'Training Date', training.strftime(DATE_FMT))
+                            # Education
+                            education = u.get('education')
+                            options = [e for e in EDUCATIONS]
+                            if not education in options:
+                                options.append(education)
+                            inputs['education'] = ui.select(
+                                options=options,
+                                value=education,
+                                label='学历',
+                                new_value_mode='add'
+                            ).classes('w-full')
 
-                    # Education
-                    education = u.get('education')
-                    options = [e for e in EDUCATIONS]
-                    if not education in options:
-                        options.append(education)
-                    inputs['education'] = ui.select(
-                        options=options,
-                        value=education,
-                        label='Education',
-                        new_value_mode='add'
-                    )
+                            # With date handling
+                            # Birth
+                            birth = u.get('birth_date')
+                            inputs['birth_date'] = date_input(
+                                '出生日期', birth.strftime(DATE_FMT)).classes('w-full')
 
-                    # Password
-                    with ui.expansion('Change Password', icon='lock'):
-                        def _v():
-                            return inputs['new_password'].value == inputs['confirm_password'].value
-                        confirm_password_validation = {
-                            k: v for k, v in PASSWORD_VALIDATION.items()}
-                        confirm_password_validation.update({
-                            '密码不一致': lambda _: _v()
-                        })
-                        if is_self:
-                            ui.label('您正在修改本人的密码，请输入您的当前密码以验证身份。').classes(
-                                STYLES.attentionText)
-                        else:
-                            ui.label('您正在修改他人的密码，请输入您的当前密码以验证身份。').classes(
-                                STYLES.attentionText)
-                        inputs['password'] = ui.input(
-                            'Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
-                        inputs['new_password'] = ui.input(
-                            'New Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
-                        inputs['confirm_password'] = ui.input(
-                            'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
+                            # Training
+                            training = u.get('training_date')
+                            inputs['training_date'] = date_input(
+                                '参训日期', training.strftime(DATE_FMT)).classes('w-full')
+
+                        with ui.column().classes('w-1/3'):
+                            # Password
+                            with ui.expansion('修改密码', icon='lock'):
+                                def _v():
+                                    return inputs['new_password'].value == inputs['confirm_password'].value
+                                confirm_password_validation = {
+                                    k: v for k, v in PASSWORD_VALIDATION.items()}
+                                confirm_password_validation.update({
+                                    '密码不一致': lambda _: _v()
+                                })
+                                if is_self:
+                                    ui.label('您正在修改本人的密码，请输入您的当前密码以验证身份。').classes(
+                                        STYLES.attentionText)
+                                else:
+                                    ui.label('您正在修改他人的密码，请输入您的当前密码以验证身份。').classes(
+                                        STYLES.attentionText)
+                                inputs['password'] = ui.input(
+                                    '密码', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
+                                inputs['new_password'] = ui.input(
+                                    '新密码', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
+                                inputs['confirm_password'] = ui.input(
+                                    '确认新密码', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
 
                     # Apply
                     def apply():
@@ -551,7 +554,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                         ui.notify('Changes are applied')
                         return
 
-                    ui.button('Apply', on_click=apply).props('color=primary')
+                    with ui.row().classes('justify-evenly w-full'):
+                        ui.button('应用修改', on_click=apply).props(
+                            'color=primary')
 
                 return
 

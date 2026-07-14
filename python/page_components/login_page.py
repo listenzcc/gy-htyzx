@@ -41,20 +41,20 @@ def login_login_card(
         return False
 
     with ui.card().classes(STYLES.column3Card):  # .classes('absolute-center'):
-        ui.label('Login').classes(STYLES.cardTitleLabel)
-        username = ui.input('Username', validation=USERNAME_VALIDATION).classes(
+        ui.label('登陆').classes(STYLES.cardTitleLabel)
+        username = ui.input('用户名', validation=USERNAME_VALIDATION).classes(
             'w-full').on('keydown.enter', try_login)
-        password = ui.input('Password', password=True, password_toggle_button=True).classes('w-full').on(
+        password = ui.input('密码', password=True, password_toggle_button=True).classes('w-full').on(
             'keydown.enter', try_login)
-        ui.button('Log in', on_click=try_login)
-        ui.link('Continue without login', '/welcome')
+        ui.button('登陆', on_click=try_login)
+        # ui.link('Continue without login', '/welcome')
     return
 
 
 def login_signup_card(user_server: UserService, on_success: None):
 
     with ui.card().classes(STYLES.column3Card) as detail_card:
-        ui.label('Signup').classes(STYLES.cardTitleLabel)
+        ui.label('注册').classes(STYLES.cardTitleLabel)
 
         inputs = {}
 
@@ -63,14 +63,14 @@ def login_signup_card(user_server: UserService, on_success: None):
             detail_card.clear()
 
             with detail_card:
-                ui.label('Signup').classes(STYLES.cardTitleLabel)
+                ui.label('注册').classes(STYLES.cardTitleLabel)
 
                 # Init the u as the NEW_USER_DCT
                 u = {k: v for k, v in NEW_USER_DCT.items()}
 
                 # Username
                 inputs['username'] = ui.input(
-                    'Username', value=u.get('username', ''),
+                    '用户名', value=u.get('username', ''),
                     validation=USERNAME_VALIDATION
                 ).classes('w-full')
 
@@ -84,9 +84,9 @@ def login_signup_card(user_server: UserService, on_success: None):
                 })
 
                 inputs['password'] = ui.input(
-                    'Password', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
+                    '密码', password=True, password_toggle_button=True, validation=PASSWORD_VALIDATION).classes('w-full')
                 inputs['confirmPassword'] = ui.input(
-                    'Confirm Password', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
+                    '确认密码', password=True, password_toggle_button=True, validation=confirm_password_validation).classes('w-full')
 
                 ui.separator().classes('border-t-2 border-gray-200')
 
@@ -94,19 +94,19 @@ def login_signup_card(user_server: UserService, on_success: None):
                 with ui.row().classes('w-full row'):
                     inputs['role'] = ui.select(
                         options=list(ROLES),
-                        label='Role',
+                        label='角色',
                         value=u.get('role')
                     ).classes('col-5')
 
                     inputs['is_active'] = ui.switch(
-                        'Active', value=u.get('is_active', True))
+                        '激活', value=u.get('is_active', True))
 
                 # Gender & education
                 with ui.row().classes('w-full row'):
                     # Gender
                     inputs['gender'] = ui.select(
                         options=list(GENDERS),
-                        label='Gender',
+                        label='性别',
                         value=u.get('gender')
                     ).classes('col-5')
 
@@ -118,7 +118,7 @@ def login_signup_card(user_server: UserService, on_success: None):
                     inputs['education'] = ui.select(
                         options=options,
                         value=education,
-                        label='Education',
+                        label='学历',
                         new_value_mode='add'
                     ).classes('col-5')
 
@@ -127,12 +127,12 @@ def login_signup_card(user_server: UserService, on_success: None):
                     # Birth
                     birth = u.get('birth_date', datetime.now())
                     inputs['birth_date'] = date_input(
-                        'Birth Date', birth.strftime(DATE_FMT)).classes('col-5')
+                        '出生日期', birth.strftime(DATE_FMT)).classes('col-5')
 
                     # Training
                     training = u.get('training_date', datetime.now())
                     inputs['training_date'] = date_input(
-                        'Training Date', training.strftime(DATE_FMT)).classes('col-5')
+                        '受训日期', training.strftime(DATE_FMT)).classes('col-5')
 
                 # Apply
                 def apply():
@@ -181,6 +181,6 @@ def login_signup_card(user_server: UserService, on_success: None):
                         ui.notify('Failed create new user',
                                   **NOTIFY_KWARGS.negative)
 
-                ui.button('Apply', on_click=apply).props('color=primary')
+                ui.button('注册', on_click=apply).props('color=primary')
         render_detail()
     return

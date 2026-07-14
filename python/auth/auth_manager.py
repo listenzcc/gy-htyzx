@@ -15,9 +15,9 @@ class PermissionManager:
 
     # 角色默认权限
     ROLE_PERMISSIONS = {
-        RoleEnum.GUEST.value: [e['name'] for e in PERMISSIONS if 'GUEST' in e['roles']],
-        RoleEnum.USER.value: [e['name'] for e in PERMISSIONS if 'USER' in e['roles']],
-        RoleEnum.ADMIN.value: [e['name'] for e in PERMISSIONS if 'ADMIN' in e['roles']],
+        RoleEnum.GUEST.value: [e['name'] for e in PERMISSIONS if '游客' in e['roles']],
+        RoleEnum.USER.value: [e['name'] for e in PERMISSIONS if '普通用户' in e['roles']],
+        RoleEnum.ADMIN.value: [e['name'] for e in PERMISSIONS if '管理员' in e['roles']],
     }
 
     def __init__(self, session: Session):

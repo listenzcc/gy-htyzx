@@ -203,7 +203,7 @@ async def user_management_page():
         logger.error('Requiring /user_management page but has no premission.')
         return
 
-    reuseable_header('User Management')
+    reuseable_header('用户管理')
 
     def _on_edit_apply(updated: dict):
         user_service.edit_user_comprehensive(updated)
@@ -302,19 +302,14 @@ async def login_page(redirect_to: str = '/') -> Optional[RedirectResponse]:
         else:
             contents = [f'[{n-i}]: {e}' for i, e in enumerate(records[::-1])]
 
-        new_users_ta.set_value('\n'.join(contents))
         return
 
-    reuseable_header('Login & Signup')
+    reuseable_header('登陆和注册')
     with ui.row().classes('w-full justify-evenly'):
         login_login_card(user_service, session_manager, app, redirect_to)
         login_signup_card(user_service, on_success_new_user)
 
     ui.separator()
-
-    # with ui.row().classes('w-full justify-evenly'):
-    ui.label('New users').classes(STYLES.cardTitleLabel)
-    new_users_ta = ui.textarea().classes('w-full')
 
     on_success_new_user()
 
@@ -385,5 +380,5 @@ if __name__ in {'__main__', '__mp_main__'}:
            # ! Only reload with these folders are changed.
            uvicorn_reload_dirs='./python',
            storage_secret='abcdefg',
-           # native=True,
+           #    native=True,
            **kwargs)

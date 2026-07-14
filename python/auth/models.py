@@ -27,9 +27,9 @@ Base = declarative_base()
 
 class RoleEnum(enum.Enum):
     """角色枚举"""
-    GUEST = "GUEST"
-    USER = "USER"
-    ADMIN = "ADMIN"
+    GUEST = "游客"
+    USER = "普通用户"
+    ADMIN = "管理员"
 
 
 # 权限关联表（多对多关系）

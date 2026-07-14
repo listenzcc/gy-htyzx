@@ -25,6 +25,9 @@ import random
 from pathlib import Path
 from datetime import datetime, timedelta
 
+import shutil
+shutil.copy2('./python/constants.py', './constants.py')  # noqa
+
 from python.constants import *
 from python.auth.database import DatabaseManager
 from python.auth.user_service import UserService
@@ -94,13 +97,15 @@ db_manager.initialize_data()
 session = db_manager.get_session()
 user_service = UserService(session)
 
-roles = ['ADMIN'] * NUM_ADMIN + ['USER'] * NUM_USER + ['GUEST'] * NUM_GUEST
+roles = ['管理员'] * NUM_ADMIN + ['普通用户'] * NUM_USER + ['游客'] * NUM_GUEST
 for role in roles:
-    user_dct = generate_user_randomly(role=role)
+    user_dct = generate_user_randomly(role=role, password='111111')
     try:
         user_service.create_user(**user_dct)
     except:
         pass
+
+Path('./constants.py').unlink()
 
 # %% ---- 2026-06-21 ------------------------
 # Pending

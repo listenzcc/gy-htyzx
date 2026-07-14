@@ -2,43 +2,43 @@ permissions:
   - name: add_user
     description: 创建用户
     roles:
-      - ADMIN
+      - 管理员
 
   - name: delete_user
     description: 删除用户
     roles:
-      - ADMIN
+      - 管理员
 
   - name: edit_users
     description: 编辑用户信息
     roles:
-      - ADMIN
+      - 管理员
 
   - name: export_users
     description: 导出用户信息
     roles:
-      - ADMIN
+      - 管理员
 
   - name: import_users
     description: 导入用户信息
     roles:
-      - ADMIN
+      - 管理员
 
   - name: view_users
     description: 查阅用户信息
     roles:
-      - ADMIN
-      - USER
+      - 管理员
+      - 普通用户
 
   - name: perform_experiment1
     description: 进行实验1
     roles:
-      - ADMIN
-      - USER
+      - 管理员
+      - 普通用户
 
   - name: just_walk_by
     description: 纯路过
     roles:
-      - ADMIN
-      - USER
-      - GUEST
+      - 管理员
+      - 普通用户
+      - 游客

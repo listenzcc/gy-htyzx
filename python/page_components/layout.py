@@ -119,7 +119,7 @@ def create_user_info_section():
             with ui.row().classes('items-center gap-3'):
                 # 用户头像和欢迎信息
                 with ui.column().classes('items-end'):
-                    ui.label(f'Hello, {username}').classes(
+                    ui.label(f'当前用户名：{username}').classes(
                         'text-sm font-medium text-gray-700')
 
                 # 用户头像图标
