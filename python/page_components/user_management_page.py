@@ -746,11 +746,15 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
 
                         cb.on_value_change(update_selection)
 
+                def _on_preprocessing_finish():
+                    render_preprocessing_results()
+                    render_processing_results()
+
                 ui.button('开始预处理',
                           on_click=lambda evt,
                           options1=preprocessing_options,
                           options2=preprocessing_options_2: preprocessing(
-                              evt, eeg_data_folder, options1, options2, script=script, on_finish=render_preprocessing_results))
+                              evt, eeg_data_folder, options1, options2, script=script, on_finish=_on_preprocessing_finish))
                 ui.label(f'{cwd=}')
                 preprocessing_commands_label = ui.label(
                     ' '.join(preprocessing_options + preprocessing_options_2)).classes('w-full')
@@ -790,77 +794,84 @@ def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folde
         render_preprocessing_results()
 
     ui.separator()
-    with ui.expansion('特征分析', value=True).classes('w-full'):
-        processing_methods = [e for e in methods if e != 'preprocessing']
+    feature_processing_expansion = ui.expansion(
+        '特征分析', value=True).classes('w-full')
 
-        if len(processing_methods) == 0:
-            ui.label(f'2.没有找到特征分析脚本').classes(STYLES.errorText)
-            return
+    def render_processing_results():
+        feature_processing_expansion.clear()
 
-        _clean_epo = eeg_data_folder / 'preprocessing' / 'clean_epo.fif'
-        _preprocessing_finish = eeg_data_folder / 'preprocessing.finish'
+        with feature_processing_expansion:
+            processing_methods = [e for e in methods if e != 'preprocessing']
 
-        if not all([_clean_epo.is_file(), _preprocessing_finish.is_file()]):
-            ui.label(f'2.预处理未完成，请先完成预处理再进行特征分析').classes(STYLES.errorText)
-            return
+            if len(processing_methods) == 0:
+                ui.label(f'2.没有找到特征分析脚本').classes(STYLES.errorText)
+                return
 
-        ui.label(f'数据目录：{_clean_epo}')
+            _clean_epo = eeg_data_folder / 'preprocessing' / 'clean_epo.fif'
+            _preprocessing_finish = eeg_data_folder / 'preprocessing.finish'
 
-        with ui.row().classes('items-center'):
-            ui.label(f'请选择特征分析方法').classes(STYLES.infoText)
-            select_processing_method = ui.select(
-                processing_methods, value=processing_methods[0])
+            if not all([_clean_epo.is_file(), _preprocessing_finish.is_file()]):
+                ui.label(f'2.预处理未完成，请先完成预处理再进行特征分析').classes(STYLES.errorText)
+                return
 
-        processing_card = ui.card().classes(STYLES.fullCard)
+            ui.label(f'数据目录：{_clean_epo}')
 
-        class Processing:
-            def __init__(self):
-                select_processing_method.on_value_change(
-                    self._on_select_processing_method)
-                self._on_select_processing_method()
+            with ui.row().classes('items-center'):
+                ui.label(f'请选择特征分析方法').classes(STYLES.infoText)
+                select_processing_method = ui.select(
+                    processing_methods, value=processing_methods[0])
 
-            def _on_select_processing_method(self):
-                processing_card.clear()
-                _selected_method = select_processing_method.value
-                _script = methods[_selected_method]
-                _processing_folder = eeg_data_folder / _selected_method
-                with processing_card:
-                    ui.label(f'特征分析：{_selected_method}').classes(
-                        STYLES.infoText)
-                    ui.label(f'特征分析脚本：{_script}').classes(STYLES.infoText)
-                    ui.label(f'特征分析目录：{_processing_folder}').classes(
-                        STYLES.infoText)
+            processing_card = ui.card().classes(STYLES.fullCard)
 
-                    result_card = ui.card().classes('w-full')
+            class Processing:
+                def __init__(self):
+                    select_processing_method.on_value_change(
+                        self._on_select_processing_method)
+                    self._on_select_processing_method()
 
-                    def _on_finish():
-                        files = sorted(
-                            [e for e in _processing_folder.rglob('*') if e.is_file()])
-                        if len(files) == 0:
-                            return
+                def _on_select_processing_method(self):
+                    processing_card.clear()
+                    _selected_method = select_processing_method.value
+                    _script = methods[_selected_method]
+                    _processing_folder = eeg_data_folder / _selected_method
+                    with processing_card:
+                        ui.label(f'特征分析：{_selected_method}').classes(
+                            STYLES.infoText)
+                        ui.label(f'特征分析脚本：{_script}').classes(STYLES.infoText)
+                        ui.label(f'特征分析目录：{_processing_folder}').classes(
+                            STYLES.infoText)
 
-                        _files = {e: e.relative_to(
-                            _processing_folder).as_posix() for e in files}
-                        result_card.clear()
-                        with result_card:
-                            ui.label('特征分析结果')
-                            # ui.select(img_files, value=img_files[0])
-                            image_table_txt_select(_files)
+                        result_card = ui.card().classes('w-full')
 
-                    _on_finish()
+                        def _on_finish():
+                            files = sorted(
+                                [e for e in _processing_folder.rglob('*') if e.is_file()])
+                            if len(files) == 0:
+                                return
 
-                    commands = [
-                        'python', _script.absolute().as_posix(),
-                        '--epo', _clean_epo.absolute().as_posix(),
-                        '--out', '.'
-                    ]
-                    ui.button('开始特征分析', on_click=lambda e: feature_processing(
-                        e, _processing_folder, commands, _selected_method, _on_finish))
+                            _files = {e: e.relative_to(
+                                _processing_folder).as_posix() for e in files}
+                            result_card.clear()
+                            with result_card:
+                                ui.label('特征分析结果')
+                                # ui.select(img_files, value=img_files[0])
+                                image_table_txt_select(_files)
 
-        processing = Processing()
+                        _on_finish()
+
+                        commands = [
+                            'python', _script.absolute().as_posix(),
+                            '--epo', _clean_epo.absolute().as_posix(),
+                            '--out', '.'
+                        ]
+                        ui.button('开始特征分析', on_click=lambda e: feature_processing(
+                            e, _processing_folder, commands, _selected_method, _on_finish))
+
+            processing = Processing()
 
         pass
 
+    render_processing_results()
     return
 
 
@@ -870,8 +881,8 @@ async def feature_processing(event, cwd: Path, commands: list, mname: str, on_fi
     '''
 
     # print(event, cwd, commands, mname)
-    ui.notify(f'开始特征分析：{commands} in {cwd}', **NOTIFY_KWARGS.positive)
-    await asyncio.sleep(0.1)
+    # ui.notify(f'开始特征分析：{commands} in {cwd}', **NOTIFY_KWARGS.positive)
+    # await asyncio.sleep(0.1)
 
     cwd.mkdir(exist_ok=True, parents=True)
 
@@ -888,13 +899,35 @@ async def feature_processing(event, cwd: Path, commands: list, mname: str, on_fi
     _stdout = open(cwd / f'{mname}.stdout', 'w', encoding=ENCODING)
     _stderr = open(cwd / f'{mname}.stderr', 'w', encoding=ENCODING)
     try:
-        completed = subprocess.run(
-            commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
-            env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        # completed = subprocess.run(
+        #     commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
+        #     env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        # )
+        # assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
+        # print(completed, file=open(_finish, 'w', encoding=ENCODING))
+        # logger.info(f'{mname} finished: {commands=}')
+
+        ui.notify(f'计算开始：{mname=}，{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+        # 在线程池中运行同步的 subprocess.run
+        result = await asyncio.to_thread(
+            subprocess.run,
+            commands,
+            cwd=cwd,
+            stdout=_stdout,
+            stderr=_stderr,
+            encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}
         )
-        assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
-        print(completed, file=open(_finish, 'w', encoding=ENCODING))
-        logger.info(f'{mname} finished: {commands=}')
+
+        # 等待进程完成
+        assert result.returncode == 0, '执行完毕但 returncode 不为 0。'
+        print(result, file=open(_finish, 'w', encoding=ENCODING))
+
+        logger.info(f'feature_processing finished: {commands=}')
+        ui.notify(f'计算完成：{mname=}，{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
 
     except Exception as err:
         logger.error(f'{mname} failed: {err=}')
@@ -929,12 +962,6 @@ async def preprocessing(event, cwd: Path, options1, options2, script: Path, on_f
     _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
     _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
     try:
-        # completed = subprocess.run(
-        #     commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
-        #     env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
-        # )
-        # assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
-        # print(completed, file=open(_finish, 'w', encoding=ENCODING))
         ui.notify(f'预处理开始：{commands=}', **NOTIFY_KWARGS.positive)
         await asyncio.sleep(0.1)
 
