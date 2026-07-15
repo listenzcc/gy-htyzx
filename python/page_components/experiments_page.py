@@ -131,8 +131,8 @@ def experiments_gallery(id: int, uuid: str, user_service: UserService):
                 card = ui.card().classes(STYLES.column4Card)
                 with card:
                     ui.label(exp['cn']).classes(STYLES.cardTitleLabel)
-                    ui.label(exp['folder'])
-                    ui.label('/'.join(types))
+                    ui.label(exp['script'])
+                    ui.label('>'.join(types))
                     ui.textarea(value=exp.get('abstract', '--')).classes(
                         'w-full').props('readonly')
 

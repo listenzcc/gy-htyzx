@@ -86,12 +86,13 @@ NEW_USER_DCT = {
 # Allowed chars for username & password
 ALLOWED_USERNAME = 'abcdefghijklmnopqrstuvwxyz1234567890._-@'
 ALLOWED_PASSWORD = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*-=_+()[]{}<>'
+DENIED_PASSWORD = ' '
 
 # Basic validation for username and password
 USERNAME_VALIDATION = {
     '用户名过短': lambda value: len(value) > 3,
     # all([e in ALLOWED_USERNAME for e in value])
-    '用户名包含不支持的字符': lambda value: True
+    '用户名包含不支持的字符': lambda value: all([e not in value for e in DENIED_PASSWORD])
 }
 
 PASSWORD_VALIDATION = {

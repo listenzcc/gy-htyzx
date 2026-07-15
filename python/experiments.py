@@ -1,12 +1,15 @@
+import yaml
 from pathlib import Path
 from collections import defaultdict
 
-folders = [
-    './experiments/script',
-    './experiments/script/模拟任务',
-    './experiments/script/认知能力测试',
-    './experiments/script/认知训练',
-]
+
+folders = sorted(
+    [e.as_posix() for e in Path('./workshop/task/script/').iterdir() if e.is_dir()])
+
+i18n = yaml.safe_load(
+    open('./workshop/i18n/translation.yml', encoding='utf-8').read())
+TASK_NAME_EN2CN: dict = i18n['TASK_NAME_EN2CN']
+
 
 experiments = []
 
@@ -93,22 +96,27 @@ for folder in folders:
         fields = {'type': ['一般任务']}
         for item in items:
             if item.lower().startswith('abstract:'):
-                fields['abstract'] = item.strip()
+                fields['abstract'] = item[len('abstract:'):].strip()
             if item.lower().startswith('type:'):
                 fields['type'] = [e.strip()
                                   for e in item[len('type:'):].strip().split() if e.strip()]
             if item.lower().startswith('parameter:'):
                 fields['options'] = [e.strip()
                                      for e in item[len('parameter:'):].split('\n') if e.strip()]
+            if item.lower().startswith('requireeeg'):
+                fields['requireEEG'] = True
 
+        cn = TASK_NAME_EN2CN.get(file.stem, file.stem)
         fields.update({
             'script': file.as_posix(),
             'folder': folder,
             'file': file.name,
-            'cn': file.stem,
+            'cn': cn,
         })
 
         experiments.append(fields)
+
+experiments.sort(key=lambda d: '-'.join(d['type']))
 
 
 class Experiments:
@@ -122,6 +130,8 @@ class Experiments:
         '''
         Detect task types.
         Now it only supports two levels types.
+
+        {level1 type: [level2 types}
 
         yield self.type_dct to restore the task types.
         '''

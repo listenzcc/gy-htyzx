@@ -45,7 +45,6 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         'birth_date_to': None,
         'training_date_from': None,
         'training_date_to': None,
-        'usernames_of_interest': None
     }
 
     columns = [
@@ -149,45 +148,37 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         # ui.label('Filters').classes(STYLES.cardTitleLabel)
 
         row_styles = 'w-full gap-4 justify-center items-center'
-        with ui.row().classes(row_styles):
-            filters['usernames_of_interest'] = ui.textarea(
-                label='用户花名册（只对这些用户进行管理，用户名严格匹配，用【空格】隔开）',
-                placeholder='请输入用户花名册',
-                on_change=lambda: apply_filters()
-            ).classes('w-full')
 
         with ui.row().classes(row_styles):
             # Role filter
             filters['role_input'] = ui.select(
-                options=['不限'] + list(ROLES),
+                options=['All'] + list(ROLES),
                 label='角色',
-                value='不限',
+                value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Gender filter
             filters['gender_input'] = ui.select(
-                options=['不限'] + list(GENDERS),
+                options=['All'] + list(GENDERS),
                 label='性别',
-                value='不限',
+                value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Education filter
             filters['education_input'] = ui.select(
-                options=['不限'] + list(EDUCATIONS),
+                options=['All'] + list(EDUCATIONS),
                 label='学历',
-                value=None,
-                with_input=True,
-                new_value_mode='add-unique',
+                value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
             # Status filter
             filters['status_input'] = ui.select(
-                options=['不限', 'Active', 'Inactive'],
+                options=['All', 'Active', 'Inactive'],
                 label='激活状态',
-                value='不限',
+                value='All',
                 on_change=lambda: apply_filters()
             ).classes('w-1/5')
 
@@ -222,41 +213,34 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         """Apply filters to the rows data"""
         filtered = rows_data.copy()
 
-        # Filter based on usernames_of_interest
-        usernames_of_interest = [e.strip(
-        ) for e in filters['usernames_of_interest'].value.strip().split(' ') if e.strip()]
-        if usernames_of_interest:
-            filtered = [r for r in filtered if r['username']
-                        in usernames_of_interest]
-
         # Username filter (case-insensitive contains)
-        username = filters['username_input'].value.strip()
+        username = filters['username_input'].value
         if username:
             filtered = [r for r in filtered if username.lower()
                         in r['username'].lower()]
 
         # Role filter
         role = filters['role_input'].value
-        if role and role != '不限':
+        if role and role != 'All':
             # Check against the raw role value in the stored user data
             filtered = [r for r in filtered if user_map.get(
                 r['id'], {}).get('role') == role]
 
         # Gender filter
         gender = filters['gender_input'].value
-        if gender and gender != '不限':
+        if gender and gender != 'All':
             filtered = [r for r in filtered if user_map.get(
                 r['id'], {}).get('gender') == gender]
 
         # Education filter
         education = filters['education_input'].value
-        if education and education != '不限':
+        if education and education != 'All':
             filtered = [r for r in filtered if user_map.get(
                 r['id'], {}).get('education') == education]
 
         # Status filter
         status = filters['status_input'].value
-        if status and status != '不限':
+        if status and status != 'All':
             is_active = status == 'Active'
             filtered = [r for r in filtered if user_map.get(
                 r['id'], {}).get('is_active') == is_active]
@@ -274,6 +258,14 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         if training_date_from or training_date_to:
             filtered = filter_by_date_range(
                 filtered, 'training_date', training_date_from, training_date_to)
+
+        # date_type = filters['date_type'].value
+        # date_from = filters['date_from'].value
+        # date_to = filters['date_to'].value
+
+        # if date_from or date_to:
+        #     key = 'birth_date' if date_type == 'Birth Date' else 'training_date'
+        #     filtered = filter_by_date_range(filtered, key, date_from, date_to)
 
         return filtered
 
@@ -320,12 +312,11 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
     def clear_filters():
         """Clear all filters and reset the table"""
-        filters['usernames_of_interest'].value = ''
         filters['username_input'].value = ''
-        filters['role_input'].value = '不限'
-        filters['gender_input'].value = '不限'
-        filters['education_input'].value = '不限'
-        filters['status_input'].value = '不限'
+        filters['role_input'].value = 'All'
+        filters['gender_input'].value = 'All'
+        filters['education_input'].value = 'All'
+        filters['status_input'].value = 'All'
         filters['birth_date_from'].value = None
         filters['birth_date_to'].value = None
         filters['training_date_from'].value = None
@@ -395,6 +386,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 row = e.args[1]
                 selected['user'] = user_map.get(row['id'])
                 render_detail()
+                render_data()
                 return
 
             table.on('row-click', select_row)
@@ -567,3 +559,447 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                             'color=primary')
 
                 return
+
+        # Experiment Data
+        with ui.card().classes(STYLES.column3_2Card) as data_card:
+            # 标题栏（增加全屏按钮）
+            with ui.row().classes('w-full justify-between items-center'):
+                ui.label('Experiment Data').classes(STYLES.cardTitleLabel)
+                ui.button(icon='fullscreen',
+                          on_click=lambda: toggle_fullscreen())
+
+            is_fullscreen = {'value': False}
+
+            def toggle_fullscreen():
+                if is_fullscreen['value']:
+                    data_card.classes(remove='w-full padding-4')
+                    is_fullscreen['value'] = False
+                else:
+                    data_card.classes(add='w-full padding-4')
+                    is_fullscreen['value'] = True
+                return
+
+            def render_data():
+                data_card.clear()
+
+                with data_card:
+                    if not user_service.get_user_by_id(id).has_permission('view_users'):
+                        ui.label('Permission Deny').classes(STYLES.errorText)
+                        return
+
+                    u = selected['user']
+                    if not u:
+                        ui.label('Select a user').classes(STYLES.plainText)
+                        return
+
+                    # 标题栏（增加全屏按钮）
+                    with ui.row().classes('w-full justify-between items-center'):
+                        ui.label(f'Experiment Data: {u["username"]}').classes(
+                            STYLES.cardTitleLabel)
+                        ui.button(icon='fullscreen',
+                                  on_click=lambda: toggle_fullscreen())
+
+                    # Search for records in ./data/{uuid}/*$exp*/*$dt*/*.csv
+                    data_folder = Path(f'./data/{u["uuid"]}')
+                    if not data_folder.is_dir():
+                        ui.label('No data found').classes(STYLES.errorText)
+                        return
+                    records = []
+                    for experiment_folder in [e for e in data_folder.iterdir() if e.is_dir()]:
+                        for time_folder in [e for e in experiment_folder.iterdir() if e.is_dir()]:
+                            if not (time_folder / 'experiment.finish').exists():
+                                continue
+                            file = next(time_folder.glob('*.csv'))
+                            dt = datetime.strptime(
+                                time_folder.name[:4+4+1+6], FILE_DATE_FMT)
+                            records.append((experiment_folder.name, dt, file))
+                    records = pd.DataFrame(
+                        records, columns=['experiment', 'datetime', 'file'])
+
+                    # Make table
+                    columns = [
+                        dict(name='id', label='ID'),
+                        dict(name='experiment', label='Experiment'),
+                        dict(name='datetime', label='Datetime'),
+                    ]
+
+                    [e.update({'field': e['name'], 'sortable': True})
+                     for e in columns]
+
+                    rows = [{'id': i, 'experiment': row['experiment'], 'datetime': row['datetime'].isoformat()}
+                            for i, row in records.iterrows()]
+
+                    with ui.table(
+                        rows=rows,
+                        columns=columns,
+                        row_key='id',
+                        pagination={'rowsPerPage': 10},
+                    ).classes('w-full').props('dense bordered flat') as table:
+                        def select_row(e):
+                            selected_row = e.args[1]
+                            row = records.iloc[selected_row['id']]
+                            df = pd.read_csv(row['file'])
+
+                            experiment_name = row['experiment']
+                            experiment_datetime = row['datetime'].isoformat()
+                            eeg_data_folder = row['file'].parent
+
+                            # --------------------------------------------------
+                            record_card.clear()
+                            with record_card:
+                                ui.label(f'Record Preview: {experiment_name} | {experiment_datetime}').classes(
+                                    STYLES.cardTitleLabel)
+                                ui.table.from_pandas(df).classes(
+                                    STYLES.pandasTable)
+
+                            # --------------------------------------------------
+                            eeg_card.clear()
+                            with eeg_card:
+                                fill_eeg_card(
+                                    experiment_name, experiment_datetime, eeg_data_folder)
+
+                            return
+
+                        table.on('row-click', select_row)
+                        pass
+
+                    record_card = ui.card().classes('w-full mt-4')
+                    with record_card:
+                        ui.label('Record Preview [Select a row]').classes(
+                            STYLES.cardTitleLabel)
+
+                return
+
+    # EEG Data
+    with ui.row().classes('w-full gap-0'):
+        with ui.card().classes(STYLES.fullCard):
+            with ui.row().classes('w-full justify-between items-center'):
+                ui.label('EEG Data').classes(STYLES.cardTitleLabel)
+                with ui.card().classes('w-full') as eeg_card:
+                    pass
+
+    return
+
+
+def fill_eeg_card(experiment_name: str, experiment_datetime: str, eeg_data_folder: Path):
+    '''
+    Fill and render the EEG processing card
+    '''
+
+    ui.label(f'Record Preview: {experiment_name} | {experiment_datetime}').classes(
+        STYLES.cardTitleLabel)
+
+    # ----------------------------------------------
+    with ui.expansion(f'数据所在目录: {eeg_data_folder.as_posix()}').classes('w-full'):
+        files = sorted([e.relative_to(eeg_data_folder)
+                        for e in eeg_data_folder.rglob('*')])
+        df_files = pd.DataFrame(
+            files, columns=['文件'])
+        ui.table.from_pandas(df_files).classes(
+            'w-full max-h-[28em]')
+
+    # ----------------------------------------------
+    script_folder = Path('./preprocessing/script')
+    script_files = sorted(script_folder.rglob(f'{experiment_name}_*.py'))
+    methods = {
+        e.name.split('_')[-1][:-3]: e for e in script_files
+    }
+
+    ui.separator()
+    with ui.expansion('数据预处理', value=True).classes('w-full'):
+        if 'preprocessing' in methods:
+            with ui.card().classes('w-full'):
+                script = methods['preprocessing']
+                options = ['c 滤波', 'd 波形图呈现', 'e 脑地形图呈现',
+                           'f 坏道检测与插值', 'g ICA去噪', 'h 分段提取和噪音试次检测剔除']
+
+                with ui.row().classes('w-full'):
+                    ui.label('1. 预处理')
+                    ui.space()
+                    ui.label(f'脚本：{script.as_posix()}')
+
+                with ui.row().classes('w-full'):
+                    selected_preprocessing = [e for e in options]  # 存储选中的值
+
+                    cwd = eeg_data_folder.as_posix()
+                    preprocessing_options = ['--cnt', 'experiment-raw.cnt',
+                                             '--out', 'preprocessing']
+                    preprocessing_options_2 = []
+
+                    # 创建多个 checkbox
+                    checkboxes = []
+                    for opt in options:
+                        cb = ui.checkbox(opt, value=True)  # 标准方框
+                        checkboxes.append(cb)
+
+                        # 监听变化，更新选中列表
+                        def update_selection(cb=cb, opt=opt):
+                            if cb.value:
+                                if opt not in selected_preprocessing:
+                                    selected_preprocessing.append(opt)
+                            else:
+                                if opt in selected_preprocessing:
+                                    selected_preprocessing.remove(opt)
+
+                            while preprocessing_options_2:
+                                preprocessing_options_2.pop()
+                            args = [
+                                f'--no-{e[0]}' for e in options if e not in selected_preprocessing]
+                            [preprocessing_options_2.append(e) for e in args]
+                            preprocessing_commands_label.text = ' '.join(
+                                preprocessing_options + preprocessing_options_2)
+
+                        cb.on_value_change(update_selection)
+
+                def _on_preprocessing_finish():
+                    render_preprocessing_results()
+                    render_processing_results()
+
+                ui.button('开始预处理',
+                          on_click=lambda evt,
+                          options1=preprocessing_options,
+                          options2=preprocessing_options_2: preprocessing(
+                              evt, eeg_data_folder, options1, options2, script=script, on_finish=_on_preprocessing_finish))
+                ui.label(f'{cwd=}')
+                preprocessing_commands_label = ui.label(
+                    ' '.join(preprocessing_options + preprocessing_options_2)).classes('w-full')
+        else:
+            ui.label('没有找到预处理脚本').classes(STYLES.errorText)
+
+        # ----------------------------------------------------------------------
+        # Results of preprocessing
+        preprocessing_results_card = ui.card().classes('w-full')
+
+        def render_preprocessing_results():
+            preprocessing_folder = eeg_data_folder / 'preprocessing'
+            preprocessing_results_card.clear()
+            with preprocessing_results_card:
+                ui.label('预处理结果')
+
+                if preprocessing_folder.with_name('preprocessing.finish').exists():
+                    ui.textarea(
+                        label='preprocessing.stdout',
+                        value=open(preprocessing_folder.with_name('preprocessing.stdout'), encoding=ENCODING).read()).classes('w-full')
+                    _image_files = sorted(preprocessing_folder.rglob('*.png'))
+                    image_files = {e.absolute(): e.relative_to(
+                        preprocessing_folder).as_posix() for e in _image_files}
+                    image_select(image_files)
+
+                elif preprocessing_folder.with_name('preprocessing.stderr').is_file():
+                    ui.textarea(
+                        label='preprocessing.stderr',
+                        value=open(preprocessing_folder.with_name('preprocessing.stderr'), encoding=ENCODING).read()).classes('w-full')
+                    ui.label('没有找到预处理结果').classes(STYLES.errorText)
+
+                else:
+                    ui.label('没有找到预处理结果').classes(STYLES.errorText)
+
+                ui.button('点击此处刷新结果', on_click=render_preprocessing_results)
+
+        render_preprocessing_results()
+
+    ui.separator()
+    feature_processing_expansion = ui.expansion(
+        '特征分析', value=True).classes('w-full')
+
+    def render_processing_results():
+        feature_processing_expansion.clear()
+
+        with feature_processing_expansion:
+            processing_methods = [e for e in methods if e != 'preprocessing']
+
+            if len(processing_methods) == 0:
+                ui.label(f'2.没有找到特征分析脚本').classes(STYLES.errorText)
+                return
+
+            _clean_epo = eeg_data_folder / 'preprocessing' / 'clean_epo.fif'
+            _preprocessing_finish = eeg_data_folder / 'preprocessing.finish'
+
+            if not all([_clean_epo.is_file(), _preprocessing_finish.is_file()]):
+                ui.label(f'2.预处理未完成，请先完成预处理再进行特征分析').classes(STYLES.errorText)
+                return
+
+            ui.label(f'数据目录：{_clean_epo}')
+
+            with ui.row().classes('items-center'):
+                ui.label(f'请选择特征分析方法').classes(STYLES.infoText)
+                select_processing_method = ui.select(
+                    processing_methods, value=processing_methods[0])
+
+            processing_card = ui.card().classes(STYLES.fullCard)
+
+            class Processing:
+                def __init__(self):
+                    select_processing_method.on_value_change(
+                        self._on_select_processing_method)
+                    self._on_select_processing_method()
+
+                def _on_select_processing_method(self):
+                    processing_card.clear()
+                    _selected_method = select_processing_method.value
+                    _script = methods[_selected_method]
+                    _processing_folder = eeg_data_folder / _selected_method
+                    with processing_card:
+                        ui.label(f'特征分析：{_selected_method}').classes(
+                            STYLES.infoText)
+                        ui.label(f'特征分析脚本：{_script}').classes(STYLES.infoText)
+                        ui.label(f'特征分析目录：{_processing_folder}').classes(
+                            STYLES.infoText)
+
+                        result_card = ui.card().classes('w-full')
+
+                        def _on_finish():
+                            files = sorted(
+                                [e for e in _processing_folder.rglob('*') if e.is_file()])
+                            if len(files) == 0:
+                                return
+
+                            _files = {e: e.relative_to(
+                                _processing_folder).as_posix() for e in files}
+                            result_card.clear()
+                            with result_card:
+                                ui.label('特征分析结果')
+                                # ui.select(img_files, value=img_files[0])
+                                image_table_txt_select(_files)
+
+                        _on_finish()
+
+                        commands = [
+                            'python', _script.absolute().as_posix(),
+                            '--epo', _clean_epo.absolute().as_posix(),
+                            '--out', '.'
+                        ]
+                        ui.button('开始特征分析', on_click=lambda e: feature_processing(
+                            e, _processing_folder, commands, _selected_method, _on_finish))
+
+            processing = Processing()
+
+        pass
+
+    render_processing_results()
+    return
+
+
+async def feature_processing(event, cwd: Path, commands: list, mname: str, on_finish):
+    '''
+    mname: method name.
+    '''
+
+    # print(event, cwd, commands, mname)
+    # ui.notify(f'开始特征分析：{commands} in {cwd}', **NOTIFY_KWARGS.positive)
+    # await asyncio.sleep(0.1)
+
+    cwd.mkdir(exist_ok=True, parents=True)
+
+    # Delete existing files
+    _finish = cwd / f'{mname}.finish'
+    if _finish.is_file():
+        _finish.unlink()
+
+    _error = cwd / f'{mname}.error'
+    if _error.is_file():
+        _error.unlink()
+
+    # Actually running the experiment
+    _stdout = open(cwd / f'{mname}.stdout', 'w', encoding=ENCODING)
+    _stderr = open(cwd / f'{mname}.stderr', 'w', encoding=ENCODING)
+    try:
+        # completed = subprocess.run(
+        #     commands, cwd=cwd, stdout=_stdout, stderr=_stderr, encoding=ENCODING,
+        #     env={**os.environ, 'PYTHONIOENCODING': ENCODING}  # 设置 Python 环境变量
+        # )
+        # assert completed.returncode == 0, '执行完毕但 returncode 不为 0。'
+        # print(completed, file=open(_finish, 'w', encoding=ENCODING))
+        # logger.info(f'{mname} finished: {commands=}')
+
+        ui.notify(f'计算开始：{mname=}，{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+        # 在线程池中运行同步的 subprocess.run
+        result = await asyncio.to_thread(
+            subprocess.run,
+            commands,
+            cwd=cwd,
+            stdout=_stdout,
+            stderr=_stderr,
+            encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}
+        )
+
+        # 等待进程完成
+        assert result.returncode == 0, '执行完毕但 returncode 不为 0。'
+        print(result, file=open(_finish, 'w', encoding=ENCODING))
+
+        logger.info(f'feature_processing finished: {commands=}')
+        ui.notify(f'计算完成：{mname=}，{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+    except Exception as err:
+        logger.error(f'{mname} failed: {err=}')
+        with open(_error, 'w', encoding=ENCODING) as file:
+            file.write(f'{err=}\r\n')
+            import traceback
+            file.write(traceback.format_exc())
+        ui.notify(f'特征分析（{mname}）中遇到错误：{err=}', **NOTIFY_KWARGS.negative)
+
+    on_finish()
+    return
+
+
+async def preprocessing(event, cwd: Path, options1, options2, script: Path, on_finish):
+    print(event, cwd, options1, options2)
+    commands = [
+        'python', script.absolute().as_posix(),
+    ] + options1 + options2
+
+    (cwd / 'preprocessing').mkdir(exist_ok=True, parents=True)
+
+    # Delete existing files
+    _finish = cwd / 'preprocessing.finish'
+    if _finish.is_file():
+        _finish.unlink()
+
+    _error = cwd / 'preprocessing.error'
+    if _error.is_file():
+        _error.unlink()
+
+    # Actually running the experiment
+    _stdout = open(cwd / 'preprocessing.stdout', 'w', encoding=ENCODING)
+    _stderr = open(cwd / 'preprocessing.stderr', 'w', encoding=ENCODING)
+    try:
+        ui.notify(f'预处理开始：{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+        # 在线程池中运行同步的 subprocess.run
+        result = await asyncio.to_thread(
+            subprocess.run,
+            commands,
+            cwd=cwd,
+            stdout=_stdout,
+            stderr=_stderr,
+            encoding=ENCODING,
+            env={**os.environ, 'PYTHONIOENCODING': ENCODING}
+        )
+
+        # 等待进程完成
+        assert result.returncode == 0, '执行完毕但 returncode 不为 0。'
+        print(result, file=open(_finish, 'w', encoding=ENCODING))
+
+        logger.info(f'Preprocessing finished: {commands=}')
+        ui.notify(f'预处理完成：{commands=}', **NOTIFY_KWARGS.positive)
+        await asyncio.sleep(0.1)
+
+    except Exception as err:
+        logger.exception(err)
+        logger.error(f'Preprocessing failed: {err=}')
+        with open(_error, 'w', encoding=ENCODING) as file:
+            file.write(f'{err=}\r\n')
+            import traceback
+            file.write(traceback.format_exc())
+        ui.notify(f'预处理过程中遇到错误：{err=}', **NOTIFY_KWARGS.negative)
+
+    await asyncio.sleep(0.1)
+    on_finish()
+    await asyncio.sleep(0.1)
+
+    return

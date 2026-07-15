@@ -90,16 +90,26 @@ def create_header():
                 with ui.row().classes('gap-6'):
                     ui.link('主页', '/',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
-                    ui.link('介绍页', '/intro',
-                            ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+
+                    ui.html(
+                        '<hr class="border-l border-gray-300 h-4 w-0 border-solid">')
                     ui.link('个人页', '/profile',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('实验页', '/experiments',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+                    ui.link('数据分析页', '/analysis',
+                            ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+
+                    ui.html(
+                        '<hr class="border-l border-gray-300 h-4 w-0 border-solid">')
+
                     ui.link('用户管理页', '/user_management',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('数据迁移页', '/data_migration',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+
+                    # ui.link('介绍页', '/intro',
+                    #         ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
 
             # 右侧：用户信息和操作（右上角）
             create_user_info_section()
@@ -135,23 +145,23 @@ def create_user_info_section():
                     ui.menu_item('Logout', on_logout)
 
                 # 主菜单按钮
-                ui.button(icon='more_vert',
-                          #   on_click=lambda: menu.open(),
-                          ).props('flat round')
+                # ui.button(icon='more_vert',
+                #           #   on_click=lambda: menu.open(),
+                #           ).props('flat round')
 
                 ui.tooltip('Profile')
 
-            with ui.row().classes('items-center gap-3'):
-                # 通知图标
-                with ui.menu() as notification_menu:
-                    ui.menu_item('No new notifications')
+            # with ui.row().classes('items-center gap-3'):
+            #     # 通知图标
+            #     with ui.menu() as notification_menu:
+            #         ui.menu_item('No new notifications')
 
-                # 通知菜单按钮
-                ui.button(icon='notifications',
-                          #   on_click=lambda: notification_menu.open(),
-                          color='primary').props('flat round')
+            #     # 通知菜单按钮
+            #     ui.button(icon='notifications',
+            #               #   on_click=lambda: notification_menu.open(),
+            #               color='primary').props('flat round')
 
-                ui.tooltip('Notifications')
+            #     ui.tooltip('Notifications')
 
         else:
             # 未登录用户的显示
