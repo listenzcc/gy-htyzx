@@ -62,10 +62,11 @@ def run_experiment(dct, output_dir: Path, input_options: dict):
         logger.info(f'Experiment finished: {commands=}')
 
         # ! Simulation for data acquirement
-        example_fname = Path(
-            f'./eeg-workshop/{src.name.split("_")[0]}-raw.cnt')
-        assert example_fname.is_file(), f'File error: {example_fname}'
-        shutil.copy(example_fname, dst / 'experiment-raw.cnt')
+        if dct.get('requireEEG'):
+            example_fname = Path(
+                f'./workshop/eeg/data/{src.name.split("_")[0]}-raw.cnt')
+            assert example_fname.is_file(), f'File error: {example_fname}'
+            shutil.copy(example_fname, dst / 'experiment-raw.cnt')
 
     except Exception as err:
         logger.error(f'Experiment failed: {err=}')
@@ -84,7 +85,7 @@ async def start_experiment(event: events.ClickEventArguments, dct: dict, uuid: s
         btn.disable()
 
         output_dir = Path(
-            './data', uuid, dct['cn'], datetime.strftime(datetime.now(), FILE_DATE_FMT))
+            './data', uuid, Path(dct['script']).stem, datetime.strftime(datetime.now(), FILE_DATE_FMT))
 
         ui.notify(
             f'Start experiment: {dct=}, {output_dir=}', **NOTIFY_KWARGS.positive)
@@ -102,6 +103,7 @@ def experiments_gallery(id: int, uuid: str, user_service: UserService):
 
     if not user_service.get_user_by_id(id).has_permission('perform_experiment1'):
         ui.label('Permission deny').classes(STYLES.errorText)
+        return
 
     from collections import defaultdict
     exps = {}

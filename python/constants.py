@@ -44,6 +44,7 @@ class STYLES:
     column3_2Card = 'w-2/3 shadow-lg border'
     column4Card = 'w-1/4 shadow-lg border'
     cardTitleLabel = 'text-lg font-semibold'
+    cardSubTitleLabel = 'text-md font-semibold'
 
     # Page
     pageTitle = 'text-3xl font-bold tracking-tight'

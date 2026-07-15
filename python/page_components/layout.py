@@ -192,20 +192,6 @@ def create_footer():
                         'text-xl font-bold text-gray-800 mb-2')
                     ui.label('Relax and take a very deep breathe.').classes(
                         'text-gray-600')
-                    with ui.row().classes('gap-3 mt-3'):
-                        ui.button(
-                            icon='facebook',
-                            color='primary',
-                            on_click=lambda: ui.run_javascript(
-                                "window.open('https://facebook.com','_blank')")
-                        ).props('flat round')
-
-                        ui.button(
-                            icon='face',
-                            color='primary',
-                            on_click=lambda: ui.run_javascript(
-                                "window.open('https://github.com','_blank')")
-                        ).props('flat round')
 
                 # 快速链接
                 with ui.column():
@@ -214,8 +200,6 @@ def create_footer():
                     ui.link(
                         'Home', '/').classes('text-gray-600 hover:text-blue-600 no-underline block py-1')
                     ui.link('About Us', '/about').classes(
-                        'text-gray-600 hover:text-blue-600 no-underline block py-1')
-                    ui.link('Services', '/services').classes(
                         'text-gray-600 hover:text-blue-600 no-underline block py-1')
                     ui.link('Contact', '/contact').classes(
                         'text-gray-600 hover:text-blue-600 no-underline block py-1')
@@ -239,12 +223,10 @@ def create_footer():
 
             # Footer下半部分：版权信息
             with ui.row().classes('w-full justify-between items-center'):
-                ui.label(f'© 2024 {project_name}. All rights reserved.').classes(
+                ui.label(f'© 2026 {project_name}. All rights reserved.').classes(
                     'text-sm text-gray-500')
                 with ui.row().classes('gap-6 text-sm'):
-                    ui.link('Privacy Policy', '/privacy').classes(
+                    ui.link('Privacy Policy', '/').classes(
                         'text-gray-500 hover:text-gray-700 no-underline')
-                    ui.link('Terms of Service', '/terms').classes(
-                        'text-gray-500 hover:text-gray-700 no-underline')
-                    ui.link('Cookie Policy', '/cookies').classes(
+                    ui.link('Terms of Service', '/').classes(
                         'text-gray-500 hover:text-gray-700 no-underline')

@@ -62,10 +62,21 @@ def image_table_txt_select(files: dict, label: str = '多功能文件查看器')
             with row:
                 ui.table.from_pandas(df).classes(
                     'max-h-[28em] overflow-scroll w-full')
+        elif select.value.name.endswith('.json'):
+            df = pd.read_json(select.value)
+            with row:
+                ui.table.from_pandas(df).classes(
+                    'max-h-[28em] overflow-scroll w-full')
         elif select.value.name.endswith('.png'):
             img.set_visibility(True)
+        elif select.value.name.endswith('.cnt'):
+            with row:
+                ui.label('.cnt 是脑电文件，该文件无法打印')
         else:
-            content = open(select.value, encoding='utf-8').read()
+            try:
+                content = open(select.value, encoding='utf-8').read()
+            except Exception as err:
+                content = f'无法解析该文件：{err}'
             with row:
                 ui.textarea(label=select.value.as_posix(),
                             value=content).classes('w-full')

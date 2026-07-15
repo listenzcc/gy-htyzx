@@ -3,8 +3,10 @@ from pathlib import Path
 from collections import defaultdict
 
 
-folders = sorted(
+FOLDERS = sorted(
     [e.as_posix() for e in Path('./workshop/task/script/').iterdir() if e.is_dir()])
+
+ANALYSIS_SCRIPTS = sorted(Path('./workshop/eeg/script').rglob('*.py'))
 
 i18n = yaml.safe_load(
     open('./workshop/i18n/translation.yml', encoding='utf-8').read())
@@ -88,7 +90,7 @@ def parse_options(options):
     return formulated_options
 
 
-for folder in folders:
+for folder in FOLDERS:
     for file in Path(folder).glob('*.py'):
         header = open(file, encoding='utf-8').read().split('"""')[1]
         items = header.split('@')[1:]
@@ -107,11 +109,13 @@ for folder in folders:
                 fields['requireEEG'] = True
 
         cn = TASK_NAME_EN2CN.get(file.stem, file.stem)
+        scripts = [e for e in ANALYSIS_SCRIPTS if file.stem in e.stem]
         fields.update({
             'script': file.as_posix(),
             'folder': folder,
             'file': file.name,
             'cn': cn,
+            'scripts': scripts
         })
 
         experiments.append(fields)
