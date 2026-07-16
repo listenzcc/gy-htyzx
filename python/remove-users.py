@@ -1,11 +1,11 @@
 """
-File: merge-users.py
+File: remove-users.py
 Author: Chuncheng Zhang
 Date: 2026-07-09
 Copyright & Email: chuncheng.zhang@ia.ac.cn
 
 Purpose:
-    Merge exported users into local user db.
+    Remove users.
 
 Functions:
     1. Requirements and constants
@@ -36,33 +36,28 @@ user_service = UserService(session)
 # Function and class
 
 
-def read_incoming(file):
-    df = pd.read_csv(file)
-    return df
-
-
 # %% ---- 2026-07-09 ------------------------
 # Play ground
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        'Merge exported users into local user db.')
-    parser.add_argument(
-        '-f', '--file', help='Users file (.csv)', required=True)
+        'Remove users from local user db.')
+    # parser.add_argument(
+    #     '-f', '--file', help='Users file (.csv)', required=True)
     args = parser.parse_args()
     print(args)
 
-    df = read_incoming(args.file)
-    print(df)
+    usernames = [
+        'admin-1',
+        'admin-2',
+        'admin-3',
+        'admin-4',
+        'admin-5',
+        'admin-10',
+        'admin-11',
+    ]
 
-    user_service.remove_user('cccc')
-
-    for i, row in df.iterrows():
-        username = row['username']
-        user = user_service.get_user_by_username(username)
-        if user is None:
-            print(f'可以合并：{username=}')
-        else:
-            print(f'发现冲突：（用户名已存在）{username=}')
+    for name in usernames:
+        user_service.remove_user(name)
 
 
 # %% ---- 2026-07-09 ------------------------

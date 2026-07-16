@@ -338,17 +338,22 @@ async def login_page(redirect_to: str = '/') -> Optional[RedirectResponse]:
 @with_layout
 async def root():
     # 快速导航按钮
-    with ui.row().classes('gap-4 mt-8 w-full'):
+    with ui.row().classes('gap-4 mt-8 w-full justify-evenly'):
         # Check if use is authenticated
         if app.storage.user.get('authenticated', False):
-            ui.button('Profile', icon='dashboard',
+            ui.button('个人', icon='dashboard',
                       on_click=lambda: ui.navigate.to('/profile')).props('color=primary')
-            ui.button('Experiments', icon='science',
+
+            ui.button('实验', icon='science',
                       on_click=lambda: ui.navigate.to('/experiments')).props('color=accent')
-            ui.button('User Management', icon='book',
+            ui.button('数据分析', icon='computer',
+                      on_click=lambda: ui.navigate.to('/analysis')).props('color=accent')
+
+            ui.button('用户管理', icon='book',
                       on_click=lambda: ui.navigate.to('/user_management')).props('color=green')
-            ui.button('Data Migration', icon='sensors',
-                      on_click=lambda: ui.navigate.to('/data_migration')).props('color=secondary')
+            ui.button('数据迁移', icon='sensors',
+                      on_click=lambda: ui.navigate.to('/data_migration')).props('color=green')
+
         else:
             ui.button('立即登录', icon='login',
                       on_click=lambda: ui.navigate.to('/login')).props('color=primary')

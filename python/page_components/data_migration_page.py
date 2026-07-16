@@ -75,7 +75,7 @@ def data_migration_export(id: int, user_service: UserService):
         # 1. Show the table
         with ui.card().classes(STYLES.fullCard):
             ui.label(f'1.导出的用户信息表：{filename.as_posix()}')
-            df = pd.read_csv(filename)
+            df = pd.read_csv(filename, encoding='gbk')
             ui.table.from_pandas(df).classes(STYLES.pandasTable)
 
         # 2. Show the data
@@ -262,6 +262,7 @@ def data_migration_import(id: int, user_service: UserService):
             def __init__(self):
                 import_data_dir.mkdir(exist_ok=True, parents=True)
                 import_data_dir_input.on_value_change(self._on_change_dir)
+                import_data_dir_input.on('keydown.enter', self._on_change_dir)
                 self._on_change_dir()
 
             def _on_change_dir(self):
@@ -292,7 +293,8 @@ def data_migration_import(id: int, user_service: UserService):
 
                     importing_btn.enable()
 
-                df = pd.read_csv(import_data_dir / 'users_export.csv')
+                df = pd.read_csv(import_data_dir /
+                                 'users_export.csv', encoding='gbk')
 
                 # Separate the usernames for with- and without-conflict
                 new_user_rows = []
@@ -317,8 +319,9 @@ def data_migration_import(id: int, user_service: UserService):
                             ui.item(username)
                             ui.item(f'{user.to_dict()}')
                     else:
-                        new_user_rows.append(row)
-                        uuid_map[row['uuid']] = user_service.gen_uuid()
+                        new_uuid = user_service.gen_uuid()
+                        uuid_map[row['uuid']] = new_uuid
+                        new_user_rows.append((row, new_uuid))
                         with list_without_conflict:
                             ui.item(username)
                             ui.item(f'{row.to_dict()}')
@@ -372,9 +375,10 @@ def data_migration_import(id: int, user_service: UserService):
 
                 def _importing_users():
                     '''Import users'''
-                    for row in new_user_rows:
+                    for row, new_uuid in new_user_rows:
                         kwargs = dict(
-                            uuid=row['uuid'],
+                            # Use the new uuid, if (and always if) it has mapping
+                            uuid=new_uuid,  # origin is row['uuid']
                             username=row['username'],
                             password=row['password_hash'],
                             do_not_generate_hash=True,

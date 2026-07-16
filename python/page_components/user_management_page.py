@@ -345,7 +345,6 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 table.update()
 
             def _on_click_export_users():
-                print('export_users')
                 if not user_service.get_user_by_id(id).has_permission('export_users'):
                     ui.notify('您目前没有 export_users 权限或账户不可用，不允许进行此操作',
                               **NOTIFY_KWARGS.negative)
@@ -367,7 +366,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 # Save to CSV
                 filename = Path('./export/users_export.csv')
                 filename.parent.mkdir(exist_ok=True, parents=True)
-                df.to_csv(filename, index=False, encoding='utf-8')
+                df.to_csv(filename, index=False, encoding='gbk')
 
                 content = f'Export users db into {filename}'
                 ui.notify(content, **NOTIFY_KWARGS.positive)
