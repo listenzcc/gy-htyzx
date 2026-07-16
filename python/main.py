@@ -43,7 +43,7 @@ from page_components.headers import reuseable_header
 from page_components.login_page import login_login_card, login_signup_card
 from page_components.debug_block import debug_block
 from page_components.profile_page import profile_content_readonly
-from page_components.experiments_page import experiments_gallery
+from page_components.experiments_page import experiments_gallery, experiments_plan_gallery
 from page_components.user_management_page import user_management_users
 from page_components.data_migration_page import data_migration_export, data_migration_import
 from page_components.analysis_page import render_analysis_page
@@ -232,6 +232,8 @@ async def experiments_page():
     reuseable_header('实验任务', user.username)
 
     experiments_gallery(user.id, user.uuid, user_service)
+    experiments_plan_gallery(user.id, user.uuid, user_service)
+
     return
 
 

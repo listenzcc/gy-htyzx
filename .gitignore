@@ -4,6 +4,7 @@ export
 import
 log
 workshop
+training_plans
 
 db
 *.db
