@@ -199,26 +199,28 @@ def experiments_plan_gallery(id: int, uuid: str, user_service: UserService):
         return
 
     options = {v: v['name'] for k, v in plans.items()}
+    options.update({'': '开始新的方案'})
     plan_select = ui.select(options, label='选择实验方案').classes('w-full')
+    plan_edit = ui.textarea(label='实验方案编辑器').classes('w-full')
+    plan_edit.set_visibility(False)
 
     with ui.card().classes('w-full'):
         plan_pipeline_row = ui.row().classes('w-full justify-center')
+
     with plan_pipeline_row:
         ui.label('选择实验方案后，实验序列会显示在这里')
 
     plan_select.on_value_change(lambda: _select_plan())
+    plan_edit.on_value_change(lambda: _edit_plan())
+
     input_options = defaultdict(dict)
 
-    def _select_plan():
-        plan = plan_select.value
-        tasks = plan['pipeline']
+    def _prepare_tasks(tasks):
         exps = {}
         for cn in tasks:
             exp = [e for e in EXP.experiments if e['cn'] == cn]
             exps[cn] = exp[0] if len(exp) > 0 else None
 
-        input_options.clear()
-        plan_pipeline_row.clear()
         with plan_pipeline_row:
             for k, exp in exps.items():
                 card = ui.card().classes(STYLES.column4Card)
@@ -229,6 +231,37 @@ def experiments_plan_gallery(id: int, uuid: str, user_service: UserService):
                             '该任务没有找到，请检查 ./workshop/task/script 目录').classes(STYLES.errorText)
                         continue
                     _put_exp_here(exp, uuid, input_options)
+
+        return
+
+    def _edit_plan():
+        input_options.clear()
+        plan_pipeline_row.clear()
+
+        tasks = [e.strip() for e in plan_edit.value.split('\n') if e.strip()]
+
+        _prepare_tasks(tasks)
+
+        pass
+
+    def _select_plan():
+        input_options.clear()
+        plan_pipeline_row.clear()
+        plan_edit.set_visibility(False)
+
+        plan = plan_select.value
+        if plan is '':
+            plan_edit.set_value(
+                '\n'.join([e['cn'] for e in EXP.experiments]))
+            plan_edit.set_visibility(True)
+        else:
+            plan_edit.set_value('\n'.join(plan['pipeline']))
+
+        # tasks = [e.strip() for e in plan_edit.value.split('\n') if e.strip()]
+
+        # _prepare_tasks(tasks)
+
+        return
 
 
 def _put_exp_here(exp, uuid, input_options):
