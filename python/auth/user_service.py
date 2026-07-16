@@ -20,6 +20,9 @@ class UserService:
         self.session = session
         self.permission_manager = PermissionManager(session)
 
+    def gen_uuid(self):
+        return str(uuid4())
+
     def create_user(self, username: str, password: str,
                     role: str = RoleEnum.GUEST.value, uuid: str = None, do_not_generate_hash: bool = False, **kwargs) -> Optional[User]:
         """创建新用户"""
@@ -32,9 +35,8 @@ class UserService:
                 return None
 
             # 创建用户
-
             # Use the input uuid or generate by uuid4()
-            uuid = str(uuid4()) if uuid is None else uuid
+            uuid = self.gen_uuid() if uuid is None else uuid
 
             user = User(username=username, role=role,
                         uuid=uuid, **kwargs)

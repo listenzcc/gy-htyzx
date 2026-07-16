@@ -300,8 +300,17 @@ def data_migration_import(id: int, user_service: UserService):
                 # Mapping {importing-uuid: local-uuid}
                 uuid_map = {}
                 for i, row in df.iterrows():
+                    # row is importing user record
+                    # Check if local already has the user with username
+                    # If so, use the local uuid
+                    # Otherwise, add the new user
+                    # Notice that the importing user may has the repeated uuid with local
+                    # So, re-gen uuid for every new user
+
                     username = row['username']
+
                     user = user_service.get_user_by_username(username)
+
                     if user:
                         uuid_map[row['uuid']] = user.uuid
                         with list_with_conflict:
@@ -309,6 +318,7 @@ def data_migration_import(id: int, user_service: UserService):
                             ui.item(f'{user.to_dict()}')
                     else:
                         new_user_rows.append(row)
+                        uuid_map[row['uuid']] = user_service.gen_uuid()
                         with list_without_conflict:
                             ui.item(username)
                             ui.item(f'{row.to_dict()}')
