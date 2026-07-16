@@ -42,6 +42,11 @@ permissions:
       - 管理员
       - 普通用户
 
+  - name: analysis_cross
+    description: 交叉分析实验数据
+    roles:
+      - 管理员
+
   - name: just_walk_by
     description: 纯路过
     roles:

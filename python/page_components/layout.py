@@ -98,6 +98,8 @@ def create_header():
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
                     ui.link('数据分析页', '/analysis',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
+                    ui.link('数据交叉分析页', '/analysis/cross',
+                            ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
 
                     ui.html(
                         '<hr class="border-l border-gray-300 h-4 w-0 border-solid">', sanitize=True)

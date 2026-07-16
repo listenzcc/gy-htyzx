@@ -47,6 +47,7 @@ from page_components.experiments_page import experiments_gallery, experiments_pl
 from page_components.user_management_page import user_management_users
 from page_components.data_migration_page import data_migration_export, data_migration_import
 from page_components.analysis_page import render_analysis_page
+from page_components.analysis_cross_page import render_analysis_cross_page
 
 
 # %%
@@ -257,6 +258,26 @@ async def analysis_page():
     reuseable_header('数据分析', user.username)
 
     render_analysis_page(user.id, user.uuid, user_service)
+    return
+
+
+# ------------------------------------------------------------------------------
+@ui.page('/analysis/cross')
+@with_layout
+async def analysis_cross_page():
+    id = app.storage.user.get('id')
+    user = user_service.get_user_by_id(id)
+
+    # Not login
+    if user is None or not user.has_permission('just_walk_by'):
+        with make_it_center():
+            ui.label('用户无权限').classes('text-red-500')
+        logger.error('Requiring /experiments page but not authenticated.')
+        return
+
+    reuseable_header('数据交叉分析', user.username)
+
+    render_analysis_cross_page(user.id, user.uuid, user_service)
     return
 
 

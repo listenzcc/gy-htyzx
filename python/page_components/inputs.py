@@ -45,13 +45,17 @@ def image_select(image_files: dict, label: str = 'Image'):
 
 
 def image_table_txt_select(files: dict, label: str = '多功能文件查看器'):
+    if not files:
+        return
+
     for path, name in files.items():
         break
 
-    select = ui.select(options=files, label=label,
-                       value=path, on_change=lambda: _on_change()).classes('w-full')
-    img = ui.image().bind_source_from(select, 'value').classes('w-full')
-    row = ui.row().classes('w-full').classes('w-full')
+    with ui.card().classes('w-full'):
+        select = ui.select(options=files, label=label,
+                           value=path, on_change=lambda: _on_change()).classes('w-full')
+        img = ui.image().bind_source_from(select, 'value').classes('w-full')
+        row = ui.row().classes('w-full')
 
     def _on_change():
         img.set_visibility(False)

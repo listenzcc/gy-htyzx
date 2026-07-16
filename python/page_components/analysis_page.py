@@ -29,9 +29,8 @@ EXP = Experiments()
 # ------------------------------------------------------------------------------
 DATA_FOLDER = Path('./data')
 
+
 # ------------------------------------------------------------------------------
-
-
 def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids: list = []):
 
     def has_permission():
@@ -61,6 +60,7 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
         # Make table
         columns = [
             dict(name='id', label='序号'),
+            dict(name='experimentType', label='任务类别'),
             dict(name='experimentCN', label='任务名'),
             dict(name='datetime', label='实验日期'),
         ]
@@ -71,6 +71,8 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
                               'rowsPerPage': 10}).classes('w-full').props('dense bordered flat')
 
         data_card = ui.card().classes(STYLES.fullCard)
+        with data_card:
+            ui.label('未选择数据，请选择一个任务开始数据分析').classes(STYLES.cardSubTitleLabel)
 
         # Look inside the folder
 
@@ -91,7 +93,7 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
             # Fill data card
             data_card.clear()
             with data_card:
-                ui.label(f'{row["experimentCN"]}实验').classes(
+                ui.label(f'“{row["experimentCN"]}”任务').classes(
                     STYLES.cardSubTitleLabel)
 
                 image_table_txt_select(
@@ -285,6 +287,15 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
                  'experimentCN': TASK_NAME_EN2CN.get(e.parent.name, e.parent.name),
                  'datetime': e.name}
                 for i, e in enumerate(date_folders)]
+
+            for row in date_rows:
+                cn = row['experimentCN']
+                exp = [e for e in EXP.experiments if e['cn'] == cn]
+                if not exp:
+                    row['experimentType'] = '--'
+                exp = exp[0]
+                row['experimentType'] = exp['type'][0]
+
             date_table.update_rows(date_rows)
             date_table.on('row-click', self._date_table_on_row_click)
 

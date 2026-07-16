@@ -141,12 +141,15 @@ class Experiments:
         '''
 
         dct = defaultdict(set)
+        cn2type_dct = {}
         for exp in self.experiments:
             types = exp['type']
             dct[types[0]]
             [dct[types[0]].add(e) for e in types[1:]]
+            cn2type_dct[exp['cn']] = types[0]
 
         self.type_dct = dct
+        self.cn2type_dct = cn2type_dct
 
         return dct
 
