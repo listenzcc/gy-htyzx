@@ -374,6 +374,8 @@ async def root():
                       on_click=lambda: ui.navigate.to('/experiments')).props('color=accent')
             ui.button('数据分析', icon='computer',
                       on_click=lambda: ui.navigate.to('/analysis')).props('color=accent')
+            ui.button('数据交叉分析', icon='rocket',
+                      on_click=lambda: ui.navigate.to('/analysis/cross')).props('color=accent')
 
             ui.button('用户管理', icon='book',
                       on_click=lambda: ui.navigate.to('/user_management')).props('color=green')

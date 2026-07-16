@@ -91,8 +91,8 @@ def create_header():
                     ui.link('个人页', '/profile',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
 
-                    ui.html(
-                        '<hr class="border-l border-gray-300 h-4 w-0 border-solid">', sanitize=False)
+                    # ui.html(
+                    #     '<hr class="border-l border-gray-300 h-4 w-0 border-solid">', sanitize=False)
 
                     ui.link('实验页', '/experiments',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
@@ -101,8 +101,8 @@ def create_header():
                     ui.link('数据交叉分析页', '/analysis/cross',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')
 
-                    ui.html(
-                        '<hr class="border-l border-gray-300 h-4 w-0 border-solid">', sanitize=True)
+                    # ui.html(
+                    #     '<hr class="border-l border-gray-300 h-4 w-0 border-solid">', sanitize=True)
 
                     ui.link('用户管理页', '/user_management',
                             ).classes('text-gray-700 hover:text-blue-600 no-underline font-medium')

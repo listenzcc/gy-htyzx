@@ -11,6 +11,7 @@ ANALYSIS_SCRIPTS = sorted(Path('./workshop/eeg/script').rglob('*.py'))
 i18n = yaml.safe_load(
     open('./workshop/i18n/translation.yml', encoding='utf-8').read())
 TASK_NAME_EN2CN: dict = i18n['TASK_NAME_EN2CN']
+EEG_SCRIPT_SUFFIX_EN2CN: dict = i18n['EEG_SCRIPT_SUFFIX_EN2CN']
 
 
 experiments = []
