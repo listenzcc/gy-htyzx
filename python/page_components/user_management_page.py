@@ -151,8 +151,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         row_styles = 'w-full gap-4 justify-center items-center'
         with ui.row().classes(row_styles):
             filters['usernames_of_interest'] = ui.textarea(
-                label='用户花名册（只对这些用户进行管理，用户名严格匹配，用【空格】隔开）',
-                placeholder='请输入用户花名册',
+                label='用户名单（只对这些用户进行管理，用户名严格匹配，用【空格】隔开）',
+                placeholder='请输入用户名单',
                 on_change=lambda: apply_filters()
             ).classes('w-full')
 

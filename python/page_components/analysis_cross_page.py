@@ -125,14 +125,20 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
 
     # --------------------------------------------------------------------------
     # Select task
+    usernames_textarea = ui.textarea(label='参与交叉分析的用户名列表', value='\n'.join(
+        [e.username for e in users])).classes('w-full')
     tasks = large_table['taskCN'].unique().tolist()
     task_select = ui.select(tasks, label='选择要分析的任务').classes('w-full')
     task_example_card = ui.card().classes(STYLES.fullCard)
     task_select.on_value_change(lambda: _on_taskCN_select())
 
-    def _better_csv(csv):
-        lst = [f'{e}'.lower() for e in csv[csv.columns[0]].tolist()]
+    def _parse_csv_has_summary(csv):
+        '''
+        If the csv has summary on the 1st column, parse it.
+        Otherwise, pass it.
+        '''
         flag = False
+        lst = [f'{e}'.lower() for e in csv[csv.columns[0]].tolist()]
         if 'summary' in lst:
             i = lst.index('summary')
             csv = csv.iloc[i+1:][csv.columns[:2]]
@@ -140,10 +146,33 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
             flag = True
         return csv, flag
 
+    def _parse_csv_has_stimulus(csv):
+        '''
+        If the csv has stimulus and is_correct column, parse it.
+        Otherwise, pass it.
+        '''
+        flag = False
+        columns = ['stimulus', 'is_correct']
+        if all([e in csv.columns for e in columns]):
+            csv = csv[columns]
+            flag = True
+        return csv, flag
+
     def _on_taskCN_select():
+        allowed_usernames = [e.strip()
+                             for e in usernames_textarea.value.split('\n')]
         selected_task_df = large_table.query(
             f'taskCN == "{task_select.value}"')
-        csv, flag = _better_csv(pd.read_csv(selected_task_df.iloc[0]['csv']))
+        selected_task_df = selected_task_df[selected_task_df['username'].map(
+            lambda e: e in allowed_usernames)]
+
+        csv, flag_has_summary = _parse_csv_has_summary(
+            pd.read_csv(selected_task_df.iloc[0]['csv']))
+
+        if not flag_has_summary:
+            csv, flag_has_stimulus = _parse_csv_has_stimulus(csv)
+        else:
+            flag_has_stimulus = False
 
         task_example_card.clear()
         with task_example_card:
@@ -151,9 +180,27 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
             ui.table.from_pandas(csv, pagination={'rowsPerPage': 5}).classes(
                 'w-full max-h-[28em] overflow-scroll')
 
-            if not flag:
+            if flag_has_stimulus:
+                ui.label(f'该任务满足错题统计条件').classes(STYLES.cardSubTitleLabel)
+                _dfs = []
+                for i, row in selected_task_df.iterrows():
+                    _csv, flag = _parse_csv_has_stimulus(
+                        pd.read_csv(row['csv']))
+                    _csv['username'] = row['username']
+                    _csv['date'] = datetime.strptime(
+                        row['datestr'], FILE_DATE_FMT)
+                    _dfs.append(_csv)
+                _df = pd.concat(_dfs)
+                _df.index = range(len(_df))
+                ui.table.from_pandas(
+                    _df, pagination={'rowsPerPage': 10}).classes('w-full')
+                return
+
+            if not flag_has_summary:
                 ui.label(f'该任务不满足交叉分析条件').classes(STYLES.errorText)
                 return
+
+            ui.label(f'该任务满足交叉分析条件').classes(STYLES.cardSubTitleLabel)
 
             # Collect all the summary
             _dfs = []
@@ -162,8 +209,9 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
             _eeg_feature_errors = defaultdict(list)
 
             for _, row in selected_task_df.iterrows():
-                csv, flag = _better_csv(pd.read_csv(row['csv']))
-                if flag:
+                csv, flag_has_summary = _parse_csv_has_summary(
+                    pd.read_csv(row['csv']))
+                if flag_has_summary:
                     csv['date'] = datetime.strptime(
                         row['datestr'], FILE_DATE_FMT)
                     csv['username'] = row['username']
@@ -174,7 +222,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                         _csv = find_csv(__folder, _feat)
                         if _csv is None:
                             _eeg_feature_errors[_feat].append(
-                                f'缺少数据：{csv["username"]} | {__folder}')
+                                f'缺少数据：{row["username"]} | {__folder}')
                             continue
                         _eeg_feature_collection[_feat].append(
                             (row['username'], row['datestr'], _csv))
@@ -248,7 +296,8 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                 _errors = _eeg_feature_errors.get(_feat)
                 if _errors:
                     with feat_results_card:
-                        ui.label(f'{_errors}').classes(STYLES.errorText)
+                        [ui.label(f'{e}').classes(
+                            STYLES.errorText) for e in _errors]
                     return
 
                 _eeg_results = _eeg_feature_collection.get(_feat)
