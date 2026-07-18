@@ -75,7 +75,7 @@ def data_migration_export(id: int, user_service: UserService):
         # 1. Show the table
         with ui.card().classes(STYLES.fullCard):
             ui.label(f'1.导出的用户信息表：{filename.as_posix()}')
-            df = pd.read_csv(filename, encoding='gbk')
+            df = pd.read_csv(filename, encoding='utf-8-sig')
             ui.table.from_pandas(df).classes(STYLES.pandasTable)
 
         # 2. Show the data
@@ -294,7 +294,9 @@ def data_migration_import(id: int, user_service: UserService):
                     importing_btn.enable()
 
                 df = pd.read_csv(import_data_dir /
-                                 'users_export.csv', encoding='gbk')
+                                 'users_export.csv', encoding='utf-8-sig')
+
+                print(df)
 
                 # Separate the usernames for with- and without-conflict
                 new_user_rows = []

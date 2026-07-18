@@ -2,6 +2,7 @@ import mne
 import mne_connectivity
 import rich
 import antio
+import plotly
 import sklearn
 import loguru
 import pandas
@@ -24,6 +25,7 @@ for e in [
     mne_connectivity,
     rich,
     antio,
+    plotly,
     sklearn,
     textual,
     loguru,

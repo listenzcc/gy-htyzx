@@ -28,7 +28,12 @@ EXP = Experiments()
 
 # ------------------------------------------------------------------------------
 def run_experiment(dct, output_dir: Path, input_options: dict):
-    kwargs = {e: v.value for e, v in input_options.items()}
+    def _safe_int(value):
+        if isinstance(value, float) and value % 1 == 0:
+            return int(value)
+        return value
+
+    kwargs = {e: _safe_int(v.value) for e, v in input_options.items()}
     src = Path(dct['script']).absolute()
     dst = output_dir.absolute()
     commands = [

@@ -366,7 +366,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 # Save to CSV
                 filename = Path('./export/users_export.csv')
                 filename.parent.mkdir(exist_ok=True, parents=True)
-                df.to_csv(filename, index=False, encoding='gbk')
+                df.to_csv(filename, index=False, encoding='utf-8-sig')
 
                 content = f'Export users db into {filename}'
                 ui.notify(content, **NOTIFY_KWARGS.positive)
