@@ -2,6 +2,7 @@ from datetime import datetime
 
 # Encoding
 ENCODING = 'utf-8'
+ENCODING_CN = 'utf-8-sig'
 
 # ------------------------------------------------------------------------------
 # key: tailwind classes
