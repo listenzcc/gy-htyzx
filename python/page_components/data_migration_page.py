@@ -397,7 +397,11 @@ def data_migration_import(id: int, user_service: UserService):
                         logger.info(f'Imported {user.to_dict()}')
 
                 async def _importing_btn_on_click():
-                    _importing_users()
+                    try:
+                        _importing_users()
+                    except Exception as err:
+                        ui.notify(f'导入用户时遇到错误：{err}', **NOTIFY_KWARGS.negative)
+
                     await _copy_files()
 
                 importing_btn.on_click(_importing_btn_on_click)

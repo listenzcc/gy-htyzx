@@ -48,6 +48,55 @@ FEATURE_NAMES = {
 
 
 # ------------------------------------------------------------------------------
+def create_simple_value_filter(df):
+    """简化版：只筛选 usernames"""
+    with ui.column() as container:
+        ui.label('按值范围的用户筛选').classes(STYLES.cardSubTitleLabel)
+        # 筛选控制
+        with ui.row():
+            min_val = ui.number(label='边界1', step=0.1,
+                                value=float(df['value'].min()))
+            max_val = ui.number(label='边界2', step=0.1,
+                                value=float(df['value'].max()))
+        ui.label('符合筛选条件的用户名：')
+        label = ui.label()
+
+        def _on_change():
+            v1 = min_val.value
+            v2 = max_val.value
+            if v1 > v2:
+                v = v2
+                v2 = v1
+                v1 = v
+            _df = df.query(f'value<={v2}').query(f'value>={v1}')
+            names = _df['username'].unique()
+            report_text = f"共 {len(names)} 个用户，总记录数 {len(_df)} 条。"
+            detail_text = "；\n".join(
+                [f"{name}: {len(_df[_df['username'] == name])}条" for name in names])
+            label._text = report_text + "\n" + detail_text
+            label.update()
+
+        min_val.on_value_change(_on_change)
+        max_val.on_value_change(_on_change)
+        _on_change()
+
+
+def _analysis_df(_df):
+    df = _df.groupby('username')['value'].agg(
+        ['mean', 'median', 'std', 'var']).reset_index()
+
+    df[['mean', 'median', 'std', 'var']] = df[[
+        'mean', 'median', 'std', 'var']].round(3)
+
+    # 添加异常点列表（使用3倍标准差法则）
+    df['outliers'] = _df.groupby('username')['value'].apply(
+        lambda g: list(g[(g - g.mean()).abs() > 1 * g.std()])
+    ).reset_index(drop=True)
+    return df
+
+# ------------------------------------------------------------------------------
+
+
 def correlation_with_pvalue(x, y):
     corr, p_value = stats.pearsonr(x, y)
     return pd.Series({
@@ -125,8 +174,14 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
 
     # --------------------------------------------------------------------------
     # Select task
+    name_list = [e.username for e in users]
+    fname = Path('./tmp/cross-analysis-namelist')
+    if fname.is_file():
+        name_list = open(fname, encoding=ENCODING).read().split()
+
     usernames_textarea = ui.textarea(label='参与交叉分析的用户名列表', value='\n'.join(
-        [e.username for e in users])).classes('w-full')
+        name_list)).classes('w-full')
+
     tasks = large_table['taskCN'].unique().tolist()
     task_select = ui.select(tasks, label='选择要分析的任务').classes('w-full')
     task_example_card = ui.card().classes(STYLES.fullCard)
@@ -188,7 +243,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                         pd.read_csv(row['csv']))
                     _csv['username'] = row['username']
                     _csv['date'] = datetime.strptime(
-                        row['datestr'], FILE_DATE_FMT)
+                        row['datestr'][:15], FILE_DATE_FMT)
                     _dfs.append(_csv)
                 _df = pd.concat(_dfs)
                 _df.index = range(len(_df))
@@ -213,7 +268,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                     pd.read_csv(row['csv']))
                 if flag_has_summary:
                     csv['date'] = datetime.strptime(
-                        row['datestr'], FILE_DATE_FMT)
+                        row['datestr'][:15], FILE_DATE_FMT)
                     csv['username'] = row['username']
                     _dfs.append(csv)
                     _folder = Path(row['csv']).parent
@@ -250,6 +305,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                 name = value_name_select.value
                 _df = _summary_df.query(f'name=="{name}"').copy()
                 _df['value'] += np.random.random(len(_df))
+                _df['value'] = _df['value'].round(3)
                 fig = px.line(_df, x='date', y='value',
                               color='username', markers=True)
 
@@ -270,11 +326,24 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                     ui.plotly(fig)
 
                 _agg_row.clear()
+
                 with _agg_row:
-                    ui.table.from_pandas(_df, pagination={'rowsPerPage': 5})
-                    __df = _df.groupby('username')['value'].agg(
-                        ['mean', 'median', 'std']).reset_index()
-                    ui.table.from_pandas(__df)
+                    ui.table.from_pandas(
+                        _df,
+                        pagination={'rowsPerPage': 5},
+                        columns=[
+                            {'name': 'name', 'label': 'name', 'field': 'name',
+                                'sortable': True, 'filter': True},
+                            {'name': 'value', 'label': 'value', 'field': 'value',
+                                'sortable': True, 'filter': True},
+                            {'name': 'date', 'label': 'date', 'field': 'date',
+                                'sortable': True, 'filter': True},
+                            {'name': 'username', 'label': 'username',
+                                'field': 'username', 'sortable': True, 'filter': True},
+                        ]
+                    )
+                    ui.table.from_pandas(_analysis_df(_df))
+                    create_simple_value_filter(_df)
                 return
 
             ui.separator()
@@ -323,11 +392,12 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                 for username, datestr, _df in _eeg_results:
                     _dfs.append({
                         'username': username,
-                        'date': datetime.strptime(datestr, FILE_DATE_FMT),
+                        'date': datetime.strptime(datestr[:15], FILE_DATE_FMT),
                         'value': _df[_c][_i]})
                 _df = pd.DataFrame(_dfs)
                 _df['name'] = _feat
                 _df['value'] *= (np.random.random(len(_df)) + 1)
+                _df['value'] = _df['value'].round(3)
                 fig = px.line(_df, x='date', y='value',
                               color='username', markers=True)
                 with feat_results_card:
@@ -340,9 +410,8 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                     with ui.row().classes('w-full justify-evenly'):
                         ui.table.from_pandas(
                             _df, pagination={'rowsPerPage': 5})
-                        __df = _df.groupby('username')['value'].agg(
-                            ['mean', 'median', 'std']).reset_index()
-                        ui.table.from_pandas(__df)
+                        ui.table.from_pandas(_analysis_df(_df))
+                        create_simple_value_filter(_df)
 
                     _task_df = cross_values.get('task_df')
                     if _task_df is None:
@@ -356,6 +425,8 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                         lambda x: correlation_with_pvalue(
                             x['value_x'], x['value_y'])
                     ).reset_index()
+                    result['correlation'] = result['correlation'].round(3)
+                    result['p_value'] = result['p_value'].round(3)
 
                     with ui.row().classes('w-full justify-evenly'):
                         ui.label('交叉分析结果').classes(STYLES.cardSubTitleLabel)

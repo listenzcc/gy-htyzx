@@ -144,79 +144,80 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
     # Filter section
     # .classes('w-full mb-4 p-4 bg-gray-50'):
     # with ui.card().classes(STYLES.fullCard):
-    with ui.expansion('展开/关闭过滤器', icon='menu').classes('w-full'):
-        # .classes('text-lg font-bold mb-2')
-        # ui.label('Filters').classes(STYLES.cardTitleLabel)
+    if user_service.get_user_by_id(id).has_permission('edit_users'):
+        with ui.expansion('展开/关闭过滤器', icon='menu').classes('w-full'):
+            # .classes('text-lg font-bold mb-2')
+            # ui.label('Filters').classes(STYLES.cardTitleLabel)
 
-        row_styles = 'w-full gap-4 justify-center items-center'
-        with ui.row().classes(row_styles):
-            filters['usernames_of_interest'] = ui.textarea(
-                label='用户名单（只对这些用户进行管理，用户名严格匹配，用【空格】隔开）',
-                placeholder='请输入用户名单',
-                on_change=lambda: apply_filters()
-            ).classes('w-full')
+            row_styles = 'w-full gap-4 justify-center items-center'
+            with ui.row().classes(row_styles):
+                filters['usernames_of_interest'] = ui.textarea(
+                    label='用户名单（只对这些用户进行管理，用户名严格匹配，用【空格】隔开）',
+                    placeholder='请输入用户名单',
+                    on_change=lambda: apply_filters()
+                ).classes('w-full')
 
-        with ui.row().classes(row_styles):
-            # Role filter
-            filters['role_input'] = ui.select(
-                options=['不限'] + list(ROLES),
-                label='角色',
-                value='不限',
-                on_change=lambda: apply_filters()
-            ).classes('w-1/5')
+            with ui.row().classes(row_styles):
+                # Role filter
+                filters['role_input'] = ui.select(
+                    options=['不限'] + list(ROLES),
+                    label='角色',
+                    value='不限',
+                    on_change=lambda: apply_filters()
+                ).classes('w-1/5')
 
-            # Gender filter
-            filters['gender_input'] = ui.select(
-                options=['不限'] + list(GENDERS),
-                label='性别',
-                value='不限',
-                on_change=lambda: apply_filters()
-            ).classes('w-1/5')
+                # Gender filter
+                filters['gender_input'] = ui.select(
+                    options=['不限'] + list(GENDERS),
+                    label='性别',
+                    value='不限',
+                    on_change=lambda: apply_filters()
+                ).classes('w-1/5')
 
-            # Education filter
-            filters['education_input'] = ui.select(
-                options=['不限'] + list(EDUCATIONS),
-                label='学历',
-                value=None,
-                with_input=True,
-                new_value_mode='add-unique',
-                on_change=lambda: apply_filters()
-            ).classes('w-1/5')
+                # Education filter
+                filters['education_input'] = ui.select(
+                    options=['不限'] + list(EDUCATIONS),
+                    label='学历',
+                    value=None,
+                    with_input=True,
+                    new_value_mode='add-unique',
+                    on_change=lambda: apply_filters()
+                ).classes('w-1/5')
 
-            # Status filter
-            filters['status_input'] = ui.select(
-                options=['不限', 'Active', 'Inactive'],
-                label='激活状态',
-                value='不限',
-                on_change=lambda: apply_filters()
-            ).classes('w-1/5')
+                # Status filter
+                filters['status_input'] = ui.select(
+                    options=['不限', 'Active', 'Inactive'],
+                    label='激活状态',
+                    value='不限',
+                    on_change=lambda: apply_filters()
+                ).classes('w-1/5')
 
-        with ui.row().classes(row_styles):
-            # with ui.column().classes('gap-2'):
-            filters['birth_date_from'] = date_input(
-                '出生日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
-            filters['birth_date_to'] = date_input(
-                '出生日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+            with ui.row().classes(row_styles):
+                # with ui.column().classes('gap-2'):
+                filters['birth_date_from'] = date_input(
+                    '出生日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                filters['birth_date_to'] = date_input(
+                    '出生日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
-            # with ui.column().classes('gap-2'):
-            filters['training_date_from'] = date_input(
-                '参训日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
-            filters['training_date_to'] = date_input(
-                '参训日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                # with ui.column().classes('gap-2'):
+                filters['training_date_from'] = date_input(
+                    '参训日期（最早）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
+                filters['training_date_to'] = date_input(
+                    '参训日期（最晚）', None).classes('w-1/5').on_value_change(lambda: apply_filters())
 
-        # Action buttons
-        with ui.row().classes(row_styles):
-            # Username filter
-            filters['username_input'] = ui.input(
-                '用户名',
-                placeholder='用户名包含此字符串',
-                on_change=lambda: apply_filters()
-            ).props('clearable').classes('w-1/5')
+            # Action buttons
+            with ui.row().classes(row_styles):
+                # Username filter
+                filters['username_input'] = ui.input(
+                    '用户名',
+                    placeholder='用户名包含此字符串',
+                    on_change=lambda: apply_filters()
+                ).props('clearable').classes('w-1/5')
 
-            ui.button('应用过滤条件', on_click=lambda: apply_filters()).props(
-                'color=primary').classes('w-1/5')
-            ui.button('清除过滤条件', on_click=lambda: clear_filters()).props(
-                'color=secondary flat').classes('w-1/5')
+                ui.button('应用过滤条件', on_click=lambda: apply_filters()).props(
+                    'color=primary').classes('w-1/5')
+                ui.button('清除过滤条件', on_click=lambda: clear_filters()).props(
+                    'color=secondary flat').classes('w-1/5')
 
     def filter_users(rows_data):
         """Apply filters to the rows data"""
@@ -382,6 +383,21 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             if user_service.get_user_by_id(id).has_permission('export_users'):
                 ui.button('导出用户信息', on_click=_on_click_export_users)
                 pass
+
+            # 为后续交叉分析提供名单
+            if user_service.get_user_by_id(id).has_permission('analysis_cross'):
+                ui.button('锁定交叉分析名单',
+                          on_click=lambda: _on_click_lock_cross_analysis())
+                pass
+
+            def _on_click_lock_cross_analysis():
+                rows = table.rows
+                names = [e['username'] for e in table.rows]
+                fname = Path('./tmp/cross-analysis-namelist')
+                fname.parent.mkdir(exist_ok=True, parents=True)
+                print('\n'.join(names), file=open(
+                    fname, 'w', encoding=ENCODING))
+                ui.notify(f'锁定交叉分析名单：{names}', **NOTIFY_KWARGS.positive)
 
         with ui.table(
             rows=rows,
