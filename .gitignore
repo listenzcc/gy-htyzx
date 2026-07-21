@@ -6,6 +6,7 @@ log
 tmp
 workshop
 training_plans
+a.log
 
 db
 *.db
