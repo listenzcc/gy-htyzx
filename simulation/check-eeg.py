@@ -22,3 +22,8 @@ mne.viz.plot_events(events, sfreq=1000, event_id=event_id)
 print()
 
 # %%
+data = epochs.get_data()
+# %%
+mne.viz.plot_sensors(epochs.info, show_names=True)
+print(', '.join(epochs.info['ch_names']))
+# %%

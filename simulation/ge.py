@@ -8,7 +8,7 @@ import mne
 # data.shape = (64, n_times)
 # -----------------------
 fs = 1000
-n_channels = 64
+n_channels = 32
 n_times = int(3600 * fs)
 
 # 示例数据（单位：Volt）
@@ -82,7 +82,7 @@ raw.set_montage(montage)
 # event格式:
 # [sample, 0, event_id]
 # -----------------------
-rng = np.random.default_rng(42)
+rng = np.random.default_rng(int(time.time()*1000))
 
 event_samples = np.sort(
     rng.choice(

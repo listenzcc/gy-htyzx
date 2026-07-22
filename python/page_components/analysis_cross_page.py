@@ -156,7 +156,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
             date_folders = [e for e in tfolder.iterdir() if e.is_dir()]
             task = tfolder.name
             task_cn = taskEN2CN(task)
-            task_type = EXP.cn2type_dct[task_cn]
+            task_type = EXP.cn2type_dct.get(task_cn, '--')
             for dfolder in date_folders:
                 csv = sorted(dfolder.glob('*.csv'))
                 if not csv:
@@ -249,6 +249,54 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                 _df.index = range(len(_df))
                 ui.table.from_pandas(
                     _df, pagination={'rowsPerPage': 10}).classes('w-full')
+
+                ui.label(f'错题数量统计表').classes(STYLES.cardSubTitleLabel)
+                _df_summary = _df[_df['is_correct'] == False].groupby(
+                    'stimulus').size().reset_index(name='count')
+                _df_summary = _df_summary.sort_values('count', ascending=False)
+                ui.table.from_pandas(
+                    _df_summary,
+                    pagination={'rowsPerPage': 10},
+                    columns=[
+                        {'name': 'stimulus', 'label': 'stimulus',
+                            'field': 'stimulus', 'sortable': True, 'filter': True},
+                        {'name': 'count', 'label': 'count', 'field': 'count',
+                            'sortable': True, 'filter': True},
+                    ]
+                ).classes('w-full')
+
+                ui.label(f'错题数量统计表（分用户）').classes(STYLES.cardSubTitleLabel)
+                _usernames = list(_df['username'].unique())
+                _select = ui.select(label='选择要统计的用户', options=_usernames,
+                                    value=_usernames[0]).classes('w-full')
+                _select.on_value_change(
+                    lambda evt, _df=_df: _on_wrong_book_select_username(evt, _df))
+
+                _row = ui.row().classes('w-full')
+                with _row:
+                    ui.label('请选择用户名进行分用户统计')
+
+                def _on_wrong_book_select_username(evt, _df):
+                    _row.clear()
+                    _df = _df.query(f'username=="{_select.value}"').copy()
+                    with _row:
+                        _df_summary = _df[_df['is_correct'] == False].groupby(
+                            'stimulus').size().reset_index(name='count')
+                        _df_summary = _df_summary.sort_values(
+                            'count', ascending=False)
+                        ui.table.from_pandas(
+                            _df_summary,
+                            pagination={'rowsPerPage': 10},
+                            columns=[
+                                {'name': 'stimulus', 'label': 'stimulus',
+                                    'field': 'stimulus', 'sortable': True, 'filter': True},
+                                {'name': 'count', 'label': 'count', 'field': 'count',
+                                    'sortable': True, 'filter': True},
+                            ]
+                        ).classes('w-full')
+
+                    pass
+
                 return
 
             if not flag_has_summary:
@@ -383,7 +431,7 @@ def render_analysis_cross_page(id: int, uuid: str, user_service: UserService, us
                     _c, _i = 'Delta_PSD', 0
                 elif _feat == 'ersp':
                     feat_detail_textarea.value = 'ITC_P2_Delta 0'
-                    _c, _i = 'ITC_P2_delta', 0
+                    _c, _i = 'ITC_P2_Delta', 0
                 elif _feat == 'erp':
                     feat_detail_textarea.value = 'P2_Amplitude 0'
                     _c, _i = 'P2_Amplitude', 0

@@ -293,8 +293,9 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
                 exp = [e for e in EXP.experiments if e['cn'] == cn]
                 if not exp:
                     row['experimentType'] = '--'
-                exp = exp[0]
-                row['experimentType'] = exp['type'][0]
+                if len(exp) > 0:
+                    exp = exp[0]
+                    row['experimentType'] = exp['type'][0]
 
             date_table.update_rows(date_rows)
             date_table.on('row-click', self._date_table_on_row_click)
