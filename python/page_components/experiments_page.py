@@ -172,7 +172,34 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
             with ui.card().classes(STYLES.column3_2Card + ' items-center'):
                 plan_command_label = ui.label('')
                 ui.image(source=Path('./workshop/plans/eeg-1020-layout.png'))
-                btn = ui.button('开始刺激')
+                btn = ui.button(
+                    '开始刺激', on_click=lambda: _on_click_plan_start_btn())
+                # spinner 默认隐藏
+                spinner = ui.spinner(size='lg').classes('mt-2')
+                spinner.visible = False
+                spinner_label = ui.label()
+                spinner_label.visible = False
+
+            async def _countdown(seconds):
+                spinner.visible = True
+                spinner_label.visible = True
+
+                for remain in range(seconds, 0, -1):
+                    spinner_label.text = f'剩余 {remain} 秒'
+                    spinner_label.update()
+                    await asyncio.sleep(1)
+
+                spinner.visible = False
+                spinner_label.visible = False
+                spinner.update()
+                spinner_label.update()
+                return
+
+            async def _on_click_plan_start_btn():
+                plan_dct = {k: v.value for k, v in plan_card_inputs.items()}
+                ui.notify(f'开始光电刺激：{plan_dct}', **NOTIFY_KWARGS.positive)
+                duration = int(plan_dct['stimulation_duration'])
+                await _countdown(duration)
 
         def _plan_card_inputs_on_change():
             for k, inp in plan_card_inputs.items():
