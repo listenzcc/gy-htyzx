@@ -200,7 +200,7 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
                 ui.notify(f'开始光电刺激：{plan_dct}', **NOTIFY_KWARGS.positive)
                 duration = int(plan_dct['stimulation_duration'])
                 fname = Path(
-                    f'./data/{uuid}/simulation/{datetime.strftime(datetime.now(), FILE_DATE_FMT)}/params.success')
+                    f'./data/{uuid}/stimulation/{datetime.strftime(datetime.now(), FILE_DATE_FMT)}/params.success')
                 fname.parent.mkdir(exist_ok=True, parents=True)
                 with open(fname, 'w', encoding=ENCODING) as f:
                     print(plan_dct, file=f)
