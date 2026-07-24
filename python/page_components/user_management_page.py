@@ -24,6 +24,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
     users = sorted([e.to_dict()
                    for e in user_service.list_users()], key=lambda e: e['id'])
 
+    is_admin = user_service.get_user_by_id(id).role == '管理员'
+
     if not users:
         with ui.card().classes('w-full p-8 bg-gray-50'):
             ui.icon('people_outline', size='3rem').classes(
@@ -71,6 +73,9 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
 
         users = sorted([e.to_dict()
                         for e in user_service.list_users()], key=lambda e: e['id'])
+
+        if not is_admin:
+            users = [e for e in users if e['id'] == id]
 
         # user is dict
         for user in users:

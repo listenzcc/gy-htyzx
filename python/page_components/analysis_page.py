@@ -33,11 +33,17 @@ DATA_FOLDER = Path('./data')
 # ------------------------------------------------------------------------------
 def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids: list = []):
 
+    is_admin = user_service.get_user_by_id(id).role == '管理员'
+
     def has_permission():
         return user_service.get_user_by_id(id).has_permission('analysis_experiment1')
 
     def fetch_users():
         all_users = sorted(user_service.list_users(), key=lambda e: e.id)
+
+        if not is_admin:
+            all_users = [e for e in all_users if e.id == id]
+
         selected_users = [
             e for e in all_users if not user_ids or e.id in user_ids]
         good_users = [e for e in selected_users if (
@@ -51,6 +57,10 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
     with ui.card().classes(STYLES.fullCard):
         ui.label('选择要分析的用户').classes(STYLES.cardTitleLabel)
         users = fetch_users()
+        if not users:
+            ui.label('无可用的待分析数据').classes(STYLES.errorText)
+            return
+
         user_select = ui.select(
             [e.username for e in users], value=users[0].username).classes('w-full')
         user_info = ui.textarea('').classes('w-full')
