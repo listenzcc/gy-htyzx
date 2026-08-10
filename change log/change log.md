@@ -18,4 +18,4 @@
     status: finish
 
 6. Multiple selecting for users in user_management page.
-    status: todo
+    status: finish

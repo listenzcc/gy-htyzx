@@ -359,15 +359,17 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 if not user_service.get_user_by_id(id).has_permission('export_users'):
                     ui.notify('您目前没有 export_users 权限或账户不可用，不允许进行此操作',
                               **NOTIFY_KWARGS.negative)
-                rows = table.rows
+
+                if len(table.selected) == 0:
+                    rows = table.rows
+                else:
+                    rows = table.selected
+
                 selected_ids = [e['id'] for e in rows]
                 db_users = user_service.session.query(
                     User).filter(User.id.in_(selected_ids)).all()
 
-                print(selected_ids)
-                print(db_users)
                 columns = [c.name for c in User.__table__.columns]
-                print(columns)
                 # Convert to pandas DataFrame
                 df = pd.DataFrame([user.__dict__ for user in db_users])
 
@@ -379,7 +381,7 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 filename.parent.mkdir(exist_ok=True, parents=True)
                 df.to_csv(filename, index=False, encoding='utf-8-sig')
 
-                content = f'Export users db into {filename}'
+                content = f'Export users db ({len(db_users)}) into {filename}'
                 ui.notify(content, **NOTIFY_KWARGS.positive)
                 logger.info(content)
 
@@ -401,8 +403,11 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 pass
 
             def _on_click_lock_cross_analysis():
-                rows = table.rows
-                names = [e['username'] for e in table.rows]
+                if len(table.selected) == 0:
+                    rows = table.rows
+                else:
+                    rows = table.selected
+                names = [e['username'] for e in rows]
                 fname = Path('./tmp/cross-analysis-namelist')
                 fname.parent.mkdir(exist_ok=True, parents=True)
                 print('\n'.join(names), file=open(
@@ -415,7 +420,6 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
             row_key='id',
             pagination={'rowsPerPage': 10},
         ).classes('w-full').props('dense bordered flat') as table:
-
             def select_row(e):
                 row = e.args[1]
                 selected['user'] = user_map.get(row['id'])
@@ -428,6 +432,8 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 table.add_slot(f'body-cell-{cell}', r'''
                     <q-td :props="props"><span v-html="props.value"></span></q-td>
                 ''')
+
+            table.set_selection('multiple')
 
     # Change User Profile
     with ui.row().classes('w-full'):
