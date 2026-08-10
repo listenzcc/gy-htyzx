@@ -6,7 +6,7 @@
     status: finish
 
 2. Remove task path in experiment page.
-    status: todo
+    status: finish
 
 3. EEG actually collecting. Stimulus actually sending.
     status: todo

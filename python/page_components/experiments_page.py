@@ -306,8 +306,8 @@ def _put_exp_here(exp, uuid, input_options):
     types = exp.get('type')
     options = exp.get('options', [])
 
-    ui.label(exp['script']).classes('text-sm')
-    ui.label('>'.join(types))
+    # ui.label(exp['script']).classes('text-sm')
+    ui.label(' > '.join(types))
     ui.textarea(value=exp.get('abstract', '--')).classes(
         'w-full').props('readonly')
 
