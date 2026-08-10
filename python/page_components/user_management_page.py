@@ -259,16 +259,11 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
         # It is a list
         # Filter nothing out if the list is empty or contains '不限'
         education = filters['education_input'].value
-        print(f'{education=}')
         if len(education) == 0 or '不限' in education:
             pass
         else:
             filtered = [r for r in filtered if user_map.get(
                 r['id'], {}).get('education') in education]
-
-        # if education and education != '不限':
-        #     filtered = [r for r in filtered if user_map.get(
-        #         r['id'], {}).get('education') == education]
 
         # Status filter
         status = filters['status_input'].value
