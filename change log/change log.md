@@ -12,7 +12,7 @@
     status: todo
 
 4. Larger font in menu.
-    status: todo
+    status: finish
 
 5. Multiple selecting for education level in user_management page.
     status: todo
