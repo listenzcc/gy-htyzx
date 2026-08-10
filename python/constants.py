@@ -101,3 +101,7 @@ PASSWORD_VALIDATION = {
     '密码过短': lambda value: len(value) > 5,
     '密码包含不支持的字符': lambda value: all([e in ALLOWED_PASSWORD for e in value])
 }
+
+# ------------------------------------------------------------------------------
+# Allow debug information to be displayed on the page
+ALLOW_DEBUG_INFO_DISPLAY = False

@@ -12,6 +12,7 @@ i18n = yaml.safe_load(
     open('./workshop/i18n/translation.yml', encoding='utf-8').read())
 TASK_NAME_EN2CN: dict = i18n['TASK_NAME_EN2CN']
 EEG_SCRIPT_SUFFIX_EN2CN: dict = i18n['EEG_SCRIPT_SUFFIX_EN2CN']
+EXPERIMENT_OPTIONS_EN2CN: dict = i18n['EXPERIMENT_OPTIONS_EN2CN']
 
 
 experiments = []
@@ -50,9 +51,12 @@ def parse_options(options):
             _name = parts[0]
             _type = parts[1]
 
+            _name_cn = EXPERIMENT_OPTIONS_EN2CN.get(_name, _name)
+
             if _type == 'int':
                 formulated_options.append({
                     'name': _name,
+                    'name_cn': _name_cn,
                     'type': _type,
                     'min': int(parts[2]),
                     'max': int(parts[3]),
@@ -62,6 +66,7 @@ def parse_options(options):
             elif _type == 'float':
                 formulated_options.append({
                     'name': _name,
+                    'name_cn': _name_cn,
                     'type': _type,
                     'min': float(parts[2]),
                     'max': float(parts[3]),
@@ -71,6 +76,7 @@ def parse_options(options):
             elif _type == 'option':
                 formulated_options.append({
                     'name': _name,
+                    'name_cn': _name_cn,
                     'type': _type,
                     'options': parts[2:],
                     'value': None if use_none_as_default else parts[2]

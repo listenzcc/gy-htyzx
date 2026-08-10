@@ -2,55 +2,31 @@ from nicegui import ui
 from datetime import datetime
 
 
-# def profile_header(title: str = "Profile", subtitle: str = None, icon: str = "person", authenticated: bool = True):
-#     """Reusable profile header component"""
-#     with ui.row().classes('items-center gap-3 mb-6 w-full'):
-#         # Icon
-#         ui.icon(icon, size='2.5rem').classes('text-primary')
-
-#         # Title and subtitle
-#         with ui.column().classes('gap-0'):
-#             ui.label(title).classes('text-3xl font-bold tracking-tight')
-#             if subtitle:
-#                 ui.label(subtitle).classes('text-gray-500 text-sm')
-
-#         # Spacer and optional badge/status
-#         ui.space()
-
-#         # Status badge
-#         if authenticated:
-#             with ui.badge('✓ Online', color='positive').classes('text-sm'):
-#                 pass
-#         else:
-#             with ui.badge('✗ Offline', color='negative').classes('text-sm'):
-#                 pass
-
-
 def profile_content_readonly(dct: dict):
     # Create a nicely styled table
     with ui.card().classes('w-full mx-auto p-6'):
-        ui.label('User Information').classes('text-xl font-semibold mb-4')
+        ui.label('用户信息').classes('text-xl font-semibold mb-4')
 
         # Define field labels and formatting
         fields = [
-            ('Name', 'username'),
-            ('ID', 'id'),
-            ('UUID', 'uuid'),
-            ('Role', 'role'),
-            ('IsActive', 'is_active'),
-            ('Gender', 'gender'),
-            ('BirthDate', 'birth_date'),
-            ('Education', 'education'),
-            ('TrainingDate', 'training_date'),
-            ('CreatedAt', 'created_at'),
-            ('LastLogin', 'last_login'),
-            ('SessionID', 'session_id'),
+            ('用户名', 'username'),
+            ('用户ID', 'id'),
+            ('用户UUID', 'uuid'),
+            ('本次登陆的SessionID', 'session_id'),
+            ('角色', 'role'),
+            ('激活状态', 'is_active'),
+            ('性别', 'gender'),
+            ('出生日期', 'birth_date'),
+            ('教育背景', 'education'),
+            ('培训日期', 'training_date'),
+            ('创建时间', 'created_at'),
+            ('最后登录时间', 'last_login'),
         ]
 
         # Create table
         with ui.table(rows=[], columns=[
-            {'name': 'field', 'label': 'Field', 'field': 'field', 'sortable': True},
-            {'name': 'value', 'label': 'Value', 'field': 'value', 'sortable': True},
+            {'name': 'field', 'label': '项', 'field': 'field', 'sortable': True},
+            {'name': 'value', 'label': '值', 'field': 'value', 'sortable': True},
         ]).classes('w-full').props('dense bordered flat') as table:
 
             # Build rows
@@ -62,9 +38,9 @@ def profile_content_readonly(dct: dict):
                 if isinstance(value, datetime):
                     value = value.strftime('%Y-%m-%d %H:%M:%S')
                 elif isinstance(value, bool):
-                    value = '✓ Active' if value else '✗ Inactive'
+                    value = '✓ 激活' if value else '✗ 未激活'
                 elif value == '':
-                    value = 'Not provided'
+                    value = '未提供'
 
                 rows.append({'field': label, 'value': value})
 

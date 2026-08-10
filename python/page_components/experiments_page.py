@@ -319,13 +319,13 @@ def _put_exp_here(exp, uuid, input_options):
                     STYLES.errorText)
             elif opt['type'] == 'int':
                 input_options[exp['script']][opt['name']] = ui.number(
-                    label=opt['name'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
+                    label=opt['name_cn'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
             elif opt['type'] == 'float':
                 input_options[exp['script']][opt['name']] = ui.number(
-                    label=opt['name'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
+                    label=opt['name_cn'], min=opt['min'], max=opt['max'], step=opt['step'], value=opt['value']).classes('w-full')
             elif opt['type'] == 'option':
                 input_options[exp['script']][opt['name']] = ui.select(
-                    label=opt['name'], options=opt['options'], value=opt['value']).classes('w-full')
+                    label=opt['name_cn'], options=opt['options'], value=opt['value']).classes('w-full')
 
     btn = ui.button(
         '开始任务', on_click=lambda e, exp=exp: start_experiment(e, exp, uuid, input_options[exp['script']]))

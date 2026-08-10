@@ -168,7 +168,7 @@ async def profile_page():
         logger.error('Requiring /profile page but not authenticated.')
         return
 
-    reuseable_header('Profile', user.username)
+    reuseable_header('个人信息', user.username)
 
     # Already login
     dct = user.to_dict()
