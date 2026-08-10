@@ -185,9 +185,10 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                     label='学历',
                     value=None,
                     with_input=True,
+                    multiple=True,
                     new_value_mode='add-unique',
                     on_change=lambda: apply_filters()
-                ).classes('w-1/5')
+                ).classes('w-1/5').props('use-chips')
 
                 # Status filter
                 filters['status_input'] = ui.select(
@@ -255,10 +256,19 @@ def user_management_users(id: int, user_service: UserService, on_edit_apply=None
                 r['id'], {}).get('gender') == gender]
 
         # Education filter
+        # It is a list
+        # Filter nothing out if the list is empty or contains '不限'
         education = filters['education_input'].value
-        if education and education != '不限':
+        print(f'{education=}')
+        if len(education) == 0 or '不限' in education:
+            pass
+        else:
             filtered = [r for r in filtered if user_map.get(
-                r['id'], {}).get('education') == education]
+                r['id'], {}).get('education') in education]
+
+        # if education and education != '不限':
+        #     filtered = [r for r in filtered if user_map.get(
+        #         r['id'], {}).get('education') == education]
 
         # Status filter
         status = filters['status_input'].value

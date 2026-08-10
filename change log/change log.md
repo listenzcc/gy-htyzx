@@ -15,7 +15,7 @@
     status: finish
 
 5. Multiple selecting for education level in user_management page.
-    status: todo
+    status: finish
 
 6. Multiple selecting for users in user_management page.
     status: todo
