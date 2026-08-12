@@ -15,7 +15,7 @@ from datetime import datetime
 sys.path.append('..')  # noqa
 from constants import *
 from experiments import Experiments
-from stimulation_plans import SimulationParameters
+from stimulation_plans import SimulationParameters, send_and_receive
 from auth.user_service import UserService
 
 # ------------------------------------------------------------------------------
@@ -198,7 +198,15 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
             async def _on_click_plan_start_btn():
                 plan_dct = {k: v.value for k, v in plan_card_inputs.items()}
                 ui.notify(f'开始光电刺激：{plan_dct}', **NOTIFY_KWARGS.positive)
-                duration = int(plan_dct['stimulation_duration'])
+
+                frame = params.translate_into_bytes()
+                hex_str = send_and_receive(frame)
+                if hex_str is None:
+                    ui.notify(f'光电刺激仪设置失败：{hex_str}', **NOTIFY_KWARGS.negative)
+                else:
+                    ui.notify(f'收到光电刺激仪的回复：{hex_str}', **NOTIFY_KWARGS.positive)
+
+                duration = 1 # seconds # int(plan_dct['stimulation_duration'])
                 fname = Path(
                     f'./data/{uuid}/stimulation/{datetime.strftime(datetime.now(), FILE_DATE_FMT)}/params.success')
                 fname.parent.mkdir(exist_ok=True, parents=True)

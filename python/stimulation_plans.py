@@ -1,3 +1,6 @@
+import serial
+import time
+
 class SimulationParameters:
     """刺激参数类，按照协议规则设计"""
 
@@ -134,6 +137,86 @@ class SimulationParameters:
                 f"  持续时间={self.stimulation_duration}min\n"
                 f")")
 
+def send_and_receive(command:bytes, port='COM4', baudrate=115200, timeout=1):
+    """
+    向串口发送指令并接收返回值
+    
+    参数:
+        port: 串口号，默认COM4
+        baudrate: 波特率，默认115200
+        timeout: 超时时间(秒)，默认1秒
+    """
+    try:
+        # 1. 打开串口
+        ser = serial.Serial(
+            port=port,
+            baudrate=baudrate,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            timeout=timeout
+        )
+        
+        # 检查串口是否打开成功
+        if ser.is_open:
+            print(f"成功打开串口 {port}")
+            
+            # 2. 准备要发送的指令（根据实际需求修改）
+            # 示例：发送十六进制指令 [0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0A]
+            # 或者发送字符串指令 "AT\r\n"
+            # command = b"AT\r\n"  # 修改为你的实际指令
+            
+            # 3. 发送指令
+            ser.write(command)
+            print(f"已发送指令: {command}")
+            
+            # 等待设备响应（可选，根据设备调整）
+            time.sleep(0.1)
+            
+            # 4. 接收返回值
+            # 方法1：读取所有可用数据
+            # response = ser.read(ser.in_waiting or 100)  # 至少读取100字节
+            
+            # 方法2：按行读取（适用于文本协议）
+            # response = ser.readline()
+            
+            # 方法3：读取指定字节数
+            response = ser.read(12)  # 读取12个字节
+            
+            # 5. 关闭串口
+            ser.close()
+            
+            # 6. 处理并显示返回值
+            if response:
+                print(f"接收到数据: {response}")
+                # 尝试解码为字符串（如果是文本数据）
+                try:
+                    text = response.decode('utf-8', errors='ignore')
+                    print(f"解码为文本: {text}")
+                except:
+                    pass
+                # 显示十六进制格式
+                hex_str = ' '.join([f'{b:02X}' for b in response])
+                print(f"十六进制: {hex_str}")
+            else:
+                print("未接收到数据（超时或无数据）")
+            
+            return hex_str
+            
+        else:
+            print(f"无法打开串口 {port}")
+            return None
+            
+    except serial.SerialException as e:
+        print(f"串口错误: {e}")
+        print("请检查:")
+        print("1. 串口是否被其他程序占用")
+        print("2. 串口号是否正确")
+        print("3. 设备是否连接")
+        return None
+    except Exception as e:
+        print(f"发生错误: {e}")
+        return None
 
 # 使用示例
 if __name__ == '__main__':
