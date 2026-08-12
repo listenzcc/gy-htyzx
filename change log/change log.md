@@ -9,8 +9,9 @@
     status: finish
 
 3. EEG actually collecting. Stimulus actually sending.
-    status: todo
+    status: finish
     finish eeg: 20260812
+    finish stimulus: 20260812
 
 4. Larger font in menu.
     status: finish
