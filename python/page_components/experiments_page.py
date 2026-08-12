@@ -70,7 +70,7 @@ def run_experiment(dct, output_dir: Path, input_options: dict):
         logger.info(f'Experiment finished: {commands=}')
 
         # ! Simulation for data acquirement
-        if dct.get('requireEEG'):
+        if False and dct.get('requireEEG'):
             example_fname = Path(
                 f'./workshop/eeg/data/{src.name.split("_")[0]}-raw.cnt')
             assert example_fname.is_file(), f'File error: {example_fname}'
@@ -306,7 +306,9 @@ def _put_exp_here(exp, uuid, input_options):
     types = exp.get('type')
     options = exp.get('options', [])
 
-    # ui.label(exp['script']).classes('text-sm')
+    # ! Used for debug
+    ui.label(exp['script']).classes('text-sm')
+
     ui.label(' > '.join(types))
     ui.textarea(value=exp.get('abstract', '--')).classes(
         'w-full').props('readonly')

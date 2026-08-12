@@ -173,7 +173,8 @@ def render_analysis_page(id: int, uuid: str, user_service: UserService, user_ids
 
                 experiment_raw_eeg_file = folder / 'experiment-raw.cnt'
                 ui.label('预处理所需的原始数据').classes(STYLES.cardSubTitleLabel)
-                ui.label(experiment_raw_eeg_file.as_posix())
+                ui.label(experiment_raw_eeg_file.as_posix() +
+                         ' (或 experiment-raw.fif)')
 
                 preprocessing_results_row = ui.row().classes('w-full')
 
