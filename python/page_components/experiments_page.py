@@ -157,8 +157,14 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
                     label='mode', value=params.mode, options=['模式A', '模式B', '模式C']).classes('w-full')
                 plan_card_inputs['channel'] = ui.select(
                     label='channel', value=params.channel, options=['通道1', '通道2', '双通道']).classes('w-full')
-                plan_card_inputs['light_wavelength'] = ui.number(
-                    'light_wavelength', value=params.light_wavelength)
+
+                # plan_card_inputs['light_wavelength'] = ui.number(
+                #     'light_wavelength', value=params.light_wavelength)
+
+                plan_card_inputs['light_wavelength'] = ui.select(
+                    label='light_wavelengh',
+                    options=list(set([810, 1060, params.light_wavelength])), value=params.light_wavelength).classes('w-full')
+
                 plan_card_inputs['light_frequency'] = ui.number(
                     'light_frequency', value=params.light_frequency)
                 plan_card_inputs['light_power'] = ui.number(
@@ -204,9 +210,10 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
                 if hex_str is None:
                     ui.notify(f'光电刺激仪设置失败：{hex_str}', **NOTIFY_KWARGS.negative)
                 else:
-                    ui.notify(f'收到光电刺激仪的回复：{hex_str}', **NOTIFY_KWARGS.positive)
+                    ui.notify(f'收到光电刺激仪的回复：{hex_str}',
+                              **NOTIFY_KWARGS.positive)
 
-                duration = 1 # seconds # int(plan_dct['stimulation_duration'])
+                duration = 1  # seconds # int(plan_dct['stimulation_duration'])
                 fname = Path(
                     f'./data/{uuid}/stimulation/{datetime.strftime(datetime.now(), FILE_DATE_FMT)}/params.success')
                 fname.parent.mkdir(exist_ok=True, parents=True)
