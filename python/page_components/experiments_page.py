@@ -153,28 +153,41 @@ def stimulation_plan_gallery(id: int, uuid: str, user_service: UserService):
         with plan_row:
             with ui.card().classes(STYLES.column4Card):
                 ui.label(plan['name']).classes(STYLES.cardSubTitleLabel)
+                # mode
                 plan_card_inputs['mode'] = ui.select(
-                    label='mode', value=params.mode, options=['模式A', '模式B', '模式C']).classes('w-full')
+                    label='模式', value=params.mode, options=['模式A', '模式B', '模式C']).classes('w-full')
+                # channel
                 plan_card_inputs['channel'] = ui.select(
-                    label='channel', value=params.channel, options=['通道1', '通道2', '双通道']).classes('w-full')
+                    label='通道', value=params.channel, options=['通道1', '通道2', '双通道']).classes('w-full')
 
                 # plan_card_inputs['light_wavelength'] = ui.number(
                 #     'light_wavelength', value=params.light_wavelength)
 
+                # light_wavelength
                 plan_card_inputs['light_wavelength'] = ui.select(
-                    label='light_wavelengh',
+                    label='光刺激波长',
                     options=list(set([810, 1060, params.light_wavelength])), value=params.light_wavelength).classes('w-full')
 
+                # light_frequency
                 plan_card_inputs['light_frequency'] = ui.number(
-                    'light_frequency', value=params.light_frequency)
+                    '光刺激频率', value=params.light_frequency)
+
+                # light_power
                 plan_card_inputs['light_power'] = ui.number(
-                    'light_power', value=params.light_power)
+                    '光刺激强度', value=params.light_power)
+
+                # current_intensity
                 plan_card_inputs['current_intensity'] = ui.number(
-                    'current_intensity', value=params.current_intensity)
+                    '电刺激强度', value=params.current_intensity)
+
+                # elec_frequency
                 plan_card_inputs['elec_frequency'] = ui.number(
-                    'elec_frequency', value=params.elec_frequency)
-                plan_card_inputs['stimulation_duration'] = ui.number('stimulation_duration',
-                                                                     value=params.stimulation_duration)
+                    '电刺激频率', value=params.elec_frequency)
+
+                # stimulation_duration
+                plan_card_inputs['stimulation_duration'] = ui.number(
+                    '刺激持续时间', value=params.stimulation_duration)
+
             with ui.card().classes(STYLES.column3_2Card + ' items-center'):
                 plan_command_label = ui.label('')
                 ui.image(source=Path('./workshop/plans/eeg-1020-layout.png'))
