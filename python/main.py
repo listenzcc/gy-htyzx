@@ -28,7 +28,7 @@ from session.user_session_manager import UserSessionManager
 from loguru import logger
 from typing import Optional
 from fastapi import Request
-from nicegui import app, ui
+from nicegui import __version__, app, ui
 from datetime import datetime
 from omegaconf import OmegaConf
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
@@ -54,6 +54,29 @@ from page_components.analysis_cross_page import render_analysis_cross_page
 logger.add("log/main_{time:YYYY-MM-DD}.log",
            encoding=ENCODING, rotation='1 day')
 
+# %%
+
+# 1. 引入 Quasar 的中文语言包
+# ui.add_body_html(f'''
+#     <script src="/_nicegui/{__version__}/static/lang/zh-CN.umd.prod.js"></script>
+# ''', shared=True)
+# ui.run(language='zh-CN')
+
+# ui.add_body_html('''
+#     <script src="https://cdn.jsdelivr.net/npm/quasar@2/dist/lang/zh-CN.umd.prod.js"></script>
+# ''', shared=True)
+
+# ui.run(body_html=f'''
+#     <script src="/_nicegui/{__version__}/static/lang/zh-CN.umd.prod.js"></script>
+#     <script>
+#         // 等待 DOM 和 Quasar 就绪后，立即设置语言
+#         document.addEventListener('DOMContentLoaded', function() {{
+#             if (window.Quasar && Quasar.lang) {{
+#                 Quasar.lang.set(Quasar.lang.zhCN);
+#             }}
+#         }});
+#     </script>
+# ''')
 
 # %%
 # Constant
@@ -62,7 +85,8 @@ logger.add("log/main_{time:YYYY-MM-DD}.log",
 app.add_static_files('/static', 'static')  # URL path, local folder %%
 
 # The urls without requiring auth
-UNRESTRICTED_PAGE_ROUTES = {'/login', '/welcome', '/', '/static/favicon/*'}
+UNRESTRICTED_PAGE_ROUTES = {'/_nicegui', '/login',
+                            '/welcome', '/', '/static/favicon/*'}
 
 PROJECT = OmegaConf.load('conf/project.yml')
 
@@ -415,6 +439,7 @@ if __name__ in {'__main__', '__mp_main__'}:
 
     kwargs = {
         'reload': True,
+        'port': 23333
     }
     if len(sys.argv) > 1 and sys.argv[1] == '-w':
         kwargs = {
@@ -429,5 +454,6 @@ if __name__ in {'__main__', '__mp_main__'}:
            # ! Only reload with these folders are changed.
            uvicorn_reload_dirs='./python',
            storage_secret='abcdefg',
+           language='zh-CN',          # ← 关键：在这里设置中文
            #    native=True,
            **kwargs)

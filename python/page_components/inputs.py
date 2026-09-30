@@ -2,6 +2,16 @@ import pandas as pd
 from nicegui import ui
 
 
+# 2. 定义一个切换语言的函数
+
+
+def set_chinese():
+    ui.run_javascript('''
+        Quasar.lang.set(Quasar.lang.zhCN)
+    ''')
+    print('Using zh.CN')
+
+
 def date_input(name, value: str):
     inp = ui.input(
         name,
@@ -11,6 +21,9 @@ def date_input(name, value: str):
     def open_dialog():
         dialog.open()
 
+    # 3. 调用函数应用中文
+    # set_chinese()
+
     with ui.dialog() as dialog:
         with ui.card():
             date = ui.date(value)
@@ -19,7 +32,7 @@ def date_input(name, value: str):
                 inp.value = date.value
                 dialog.close()
 
-            ui.button('Apply', on_click=apply_date)
+            ui.button('确定', on_click=apply_date)
 
     inp.on('click', open_dialog)
     return inp
